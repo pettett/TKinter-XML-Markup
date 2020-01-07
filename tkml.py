@@ -191,6 +191,9 @@ class Window:
                 if hasVariable:
                     self.values[varname] = stringVar
                 element.tags['textvariable'] = stringVar
+
+        # TODO - fix this garbage giant if elif else messS
+
         if element.name in self.customs:
             output = self.customs[element.name](self, root,  **element.tags)
 
