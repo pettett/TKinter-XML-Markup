@@ -2,6 +2,11 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import scrolledtext
 
+from tkelements import *
+import tkmlDecoder as decode
+import colorpick
+import pygame_frame
+
 
 class Label(Label):
     def __init__(self, master=None, **options):
@@ -9,8 +14,6 @@ class Label(Label):
         fontSize = options.pop("fontsize", 9)
         options["font"] = (font, fontSize)
         super().__init__(master, **options)
-
-# added comments
 
 
 '''#help
@@ -36,9 +39,11 @@ class Label(Label):
 <checkbutton>
 <button>
 
+<colorpick> - color picker
+
 //list elements - default: list of choices seperated by ";"
-<dropdown> click to reveil choices 
-<listbox> box with list of choices 
+<dropdown> click to reveil choices
+<listbox> box with list of choices
 <spinbox> entry with arrows for choices - kinda bad
 
 //layout elements
@@ -58,14 +63,34 @@ layout = '''
 
         <command>Open</command>
         <command command="onSave">Save</command>
-        <separator></separator>
-
+        <separator/>
+        <!--Queen Menu is here - this is a comment-->
+        <cascade label="Queen">
+            <command>Mummma</command>
+            <separator/>
+            <command command="onSave">*Guitar solo*</command>
+            <cascade label="*Brum-brum*">
+                <command>i just killed a maaan</command>
+                <cascade label="*dum-dum*">
+                    <command>Put a</command>
+                    <command>gun up</command>
+                    <command>to his</command>
+                    <command>head</command>
+                    <cascade label="*guitar*">
+                        <command>pulled</command>
+                        <command>the trigger</command>
+                        <command>now he's</command>
+                        <command>dead</command>
+                    </cascade>
+                </cascade>
+            </cascade>
+        </cascade>
     </cascade>
     <cascade label="Edit">
         <command>Cut</command>
-        <separator></separator>
+        <separator/>
         <command>Copy</command>
-        <separator></separator>
+        <separator/>
         <command>Paste</command>
     </cascade>
 
@@ -81,9 +106,9 @@ layout = '''
 
         <p varname="text">Enter your data:</p>
 
-        <input varname="username" gridx=1></input>
+        <field varname="username" gridx=1/>
 
-        <button command="onButtonSubmit" gridy=1 gridspanx=2 text="Enter"></button>
+        <button command="onButtonSubmit" gridy=1 gridspanx=2 label="Enter"/>
 
         <checkbutton gridy=2>Check Button</checkbutton>
         <slider gridy=2 gridx=1 min=0 max=100 orient=HORIZONTAL></slider>
@@ -96,15 +121,18 @@ layout = '''
         <dropdown gridy=4>Option 1;Option 2;Option 3</dropdown>
         <spinbox gridy=4 gridx=1>1;2;4;8;16</spinbox>
 
+        <colorfield gridy=5/>
 
-        <listbox gridx=2 gridspany=5>option 1;option 2;option 3</listbox>
+        <listbox gridx=2 gridspany=6>option 1;option 2;option 3</listbox>
     </grid>
 
 </body>
 </tkml>
 '''
 
-currentElement = ""
+FLOAT = "FLOAT"
+INT = "INT"
+STRING = "STRING"
 
 consts = {
     "HORIZONTAL": HORIZONTAL,
@@ -112,123 +140,78 @@ consts = {
     "SINGLE": SINGLE,
     "EXTENDED": EXTENDED,
     "MULTIPLE": MULTIPLE,
-    "BROWSE": BROWSE
+    "BROWSE": BROWSE,
+    "FLOAT": FLOAT,
+    "INT": INT,
+    "STRING": STRING
 }
 
 
-def ReadTags(tagsString):  # return name, dictionary of tags:tags value
-    tagsList = tagsString.split(' ')
-    # seperate out tags
-    name = tagsList[0]
-    tagsDict = {}  # Each tag is stored in a pair TAGNAME=VALUE
-
-    for i in range(1, len(tagsList)):
-        tag = tagsList[i].split('=')
-        try:
-            if tag[1] in consts:
-                tag[1] = consts[tag[1]]
-            elif (tag[1].find('"') != -1):  # string value
-                tag[1] = tag[1][1:-1]
-            elif tag[1][-1] == 'f':  # float value
-                tag[1] = float(tag[1][0:-1])
-            elif tag[1].lower() == "false" or tag[1].lower() == "true":  # boolean
-                tag[1] = tag[1].lower() == "true"
-            else:  # int value
-                tag[1] = int(tag[1])
-
-            tagsDict[tag[0]] = tag[1]
-        except:
-            raise Exception("incorrect tags in {0}".format(tagsString))
-    return name, tagsDict
-
-
-class Element:
-
-    def CompileTKML(self, html):  # TODO Add support for nested objects - cascade within cascade
-        elements = []
-        ended = False
-        workingString = html
-        searchingForEnd = []
-        while ended == False:
-            startBrocket = workingString.find('<')
-            endTagsBrocket = workingString.find('>')
-
-            if startBrocket == -1:
-                ended = True
-            else:
-                name, tagsDict = ReadTags(
-                    workingString[startBrocket+1:endTagsBrocket])
-
-                # find next open brocket after end
-
-                targetEndTag = "</{0}>".format(name)
-                startTerminatorBrocket = workingString.find(targetEndTag)
-
-                if startTerminatorBrocket == -1:
-                    ended = True
-                else:
-                    defaultTag = workingString[endTagsBrocket +
-                                               1:startTerminatorBrocket]
-
-                    workingString = workingString[startTerminatorBrocket +
-                                                  len(targetEndTag):]
-
-                    elements.append(Element(name, defaultTag, **tagsDict))
-        return elements
-
-    def __init__(self, name, defaultTag, **kwargs):
-        self.name = name
-        self.default = defaultTag
-        self.tags = kwargs
-        self.children = []
-        # compile chilren code
-        canCompile = [
-            'tkml', 'body', 'head', 'grid', "vertical",
-            "horizontal", 'notebook', "menu", "cascade"]
-        for item in canCompile:
-            if item in name:
-                self.children = self.CompileTKML(defaultTag)
-
-
 class Window:
-    def GenerateElement(self, element, root=None):
-        if root == None:
-            root = self.root
+    # Functions used to create the window:
+    def GenerateElement(self, element, root):
+
+        style = element.tags.pop('style', '')
+        if style != '':
+            # get dict of all tags accosiated with the style and include it - if tag is in style and element tags the local tag will take priority
+            styleTags = self.styles[style]
+            for tag in styleTags.keys():
+                if tag not in element.tags:
+                    element.tags[tag] = styleTags[tag]
 
         callback = element.tags.pop('callback', '')
         hasCallback = callback != ''
+
+        callbackArgs = element.tags.pop('arg', [])
+        if callbackArgs != []:  # temporary conversion to list because args not passed as list
+            callbackArgs = [callbackArgs]
+
         varname = element.tags.pop("varname", "")
         hasVariable = varname != ''
         image = element.tags.pop("image", '')
+
         if image != '':
             image = PhotoImage(file=image)
 
-        usesStringVar = ['p', 'input', 'dropdown', 'spinbox']
-        if element.name in usesStringVar:
-            stringVar = StringVar()
-            if hasCallback:
-                stringVar.trace(
-                    'w', lambda *args: self.OnCallback(callback, *args))
-            if hasVariable:
-                self.textVars[varname] = stringVar
-            element.tags['textvariable'] = stringVar
+        ref = element.tags.pop("ref", '')
 
-        if element.name == "p":
-            stringVar.set(element.default)
+        hasRef = ref != ''
+
+        output = None
+
+        usesStringVar = ['p', 'dropdown', 'spinbox']
+        if element.name in usesStringVar:
+            if varname in self.values:
+                element.tags['textvariable'] = self.values[varname]
+            else:
+                stringVar = StringVar()
+                if hasCallback:
+                    stringVar.trace(
+                        'w', lambda *a: self.OnCallback(callback, *callbackArgs))
+                if hasVariable:
+                    self.values[varname] = stringVar
+                element.tags['textvariable'] = stringVar
+        if element.name in self.customs:
+            output = self.customs[element.name](self, root,  **element.tags)
+
+        elif element.name == "p":
+            if type(element.tags['textvariable']) is StringVar:
+                element.tags['textvariable'].set(element.default)
+            if element.default != '':
+                element.tags['text'] = element.default
             if image == '':
-                return Label(root, text=element.default, **element.tags)
+                output = Label(root, **element.tags)
             else:  # set up label with image object
-                imageLabel = Label(root, image=image,
-                                   text=element.default, **element.tags)
+                imageLabel = Label(root, image=image, **element.tags)
                 imageLabel.image = image  # keep reference so GC does not destroy it
-                return imageLabel
+                output = imageLabel
 
         elif element.name == "progressbar":
             # controller must have access to value and like of bar
             # functions start,stop and step up to 100%
             bar = ttk.Progressbar()
 
-            return bar
+            output = bar
         elif element.name == "text":
             scrolled = element.tags.pop('scrolled', False)
             if scrolled:
@@ -236,53 +219,123 @@ class Window:
             else:
                 text = Text(root)
             text.insert(END, element.default)
-            return text
-        elif element.name == "input":
-            return Entry(root, **element.tags)
+            output = text
+
+        elif element.name == 'seperator':
+            output = ttk.Separator(root, **element.tags)
+
+        elif element.name == "field":
+
+            # Get type of entry - defaults to string for convience
+            valueType = element.tags.pop("type", STRING)
+            vartagname = 'textvariable'
+            if valueType == INT:
+                vartagname = 'intvariable'
+            elif valueType == FLOAT:
+                vartagname = 'floatvariable'
+
+            if varname in self.values:  # already variable defined, use that
+                element.tags[vartagname] = self.values[varname]
+
+            else:  # create a new variable
+                if valueType == FLOAT:
+                    # setup float variable
+                    variable = DoubleVar()
+
+                elif valueType == STRING:
+                    # setup string varaible
+                    variable = StringVar()
+
+                elif valueType == INT:
+                    # setup int variable
+                    variable = IntVar()
+
+                if hasCallback:
+                    variable.trace(
+                        'w', lambda *args: self.OnCallback(callback, *callbackArgs))
+                if hasVariable:
+                    self.values[varname] = variable
+                element.tags[vartagname] = variable
+
+            # return the correct type
+            if valueType == FLOAT:
+                output = FloatField(root, **element.tags)
+            elif valueType == INT:
+                output = IntField(root, **element.tags)
+            elif valueType == STRING:
+                output = Entry(root, **element.tags)
+
+        # custom widgets
+        elif element.name == "colorfield":
+            output = colorpick.ColorField(root, **element.tags)
+        elif element.name == "pygameframe":
+            element.tags['flags'] = element.default.split(';')
+            output = pygame_frame.PygameFrame(root, **element.tags)
 
         elif element.name == "button":
             if element.default != "":
                 element.tags['text'] = element.default
-            if hasCallback:
-                element.tags["command"] = lambda: self.OnCallback(callback)
-            return Button(root, **element.tags)
+            if 'label' in element.tags:
+                element.tags['text'] = element.tags.pop('label', '')
+            if hasCallback:  # lambda used to pass callback name so function can be applied
+                element.tags["command"] = lambda: self.OnCallback(
+                    callback, *callbackArgs)
 
+            # change to page tag will change the selected page when the button is pressed
+            changeToPage = element.tags.pop('changetopage', '')
+            if changeToPage != '':
+                element.tags['command'] = lambda x=changeToPage: self.ChangeToPage(
+                    x)
+
+            output = Button(root, **element.tags)
+
+        elif element.name == "canvas":
+            output = Canvas(root, **element.tags)
+
+        elif element.name == "gradient":  # inherits from canvas with function to draw gradients onto
+            output = colorpick.Gradient(root, **element.tags)
         elif element.name == "checkbutton":
             if element.default != "":
                 element.tags['text'] = element.default
-            return Checkbutton(root, **element.tags)
+            output = Checkbutton(root, **element.tags)
 
         elif element.name == "radiobutton":
             if element.default != "":
                 element.tags['text'] = element.default
             var = element.tags.pop("group", "defaultgroup")
-            if var not in self.intVars:
-                self.intVars[var] = IntVar()
-                self.intVars[var].trace(
-                    "w", lambda *args: self.OnCallback(var))
-            return Radiobutton(root, variable=self.intVars[var], **element.tags)
+            if var not in self.values:
+                self.values[var] = IntVar()
+                self.values[var].trace(
+                    "w", lambda: self.OnCallback(callback, *callbackArgs))
+            output = Radiobutton(
+                root, variable=self.values[var], **element.tags)
 
         elif element.name == "dropdown":
             options = element.default.split(';')
             stringVar.set(options[0])
-            return OptionMenu(root, stringVar, *options)
+            output = OptionMenu(root, stringVar, *options)
 
         elif element.name == "slider":
             element.tags['from_'] = element.tags.pop('min', 0)
             element.tags['to'] = element.tags.pop("max", 1)
             if hasVariable:
-                doubleVar = DoubleVar()
+                vartype = element.tags.pop('type', FLOAT)
+                if vartype == FLOAT:
+                    variable = DoubleVar()
+                elif vartype == INT:
+                    variable = IntVar()
+                defaultValue = element.tags.pop('default', min)
+                variable.set(defaultValue)
                 if hasCallback:
-                    doubleVar.trace(
-                        'w', lambda *args: self.OnCallback(callback))
-                element.tags['variable'] = doubleVar
-                self.textVars[varname] = doubleVar
-            return Scale(root, **element.tags)
+                    variable.trace(
+                        'w', lambda *a: self.OnCallback(callback, *callbackArgs))
+                element.tags['variable'] = variable
+                self.values[varname] = variable
+            output = Scale(root, **element.tags)
 
         elif element.name == "spinbox":
             spins = element.default.split(';')
-
-            return Spinbox(root, values=spins, **element.tags)
+            output = Spinbox(root, values=spins, **element.tags)
 
         elif element.name == "listbox":
             options = element.default.split(';')
@@ -291,33 +344,55 @@ class Window:
             box = Listbox(root, **element.tags)
             for option in options:
                 box.insert(END, option)
-            return box
-        elif "grid" in element.name:
-            return self.GenerateChildrenInGrid(element)
-        elif element.name == "horizontal":
-            return self.GenerateHorizontalLayout(element, root=root)
-        elif element.name == "vertical":
-            return self.GenerateVerticalLayout(element, root=root)
-        elif element.name == "notebook":
-            return self.GenerateNotebook(element, root=root)
+            output = box
 
-    def GenerateChildren(self, parent):
+        elif element.name == 'autogrid':
+            # autogrid simply needs childs attached to it to work
+            output = AutoGrid(root, **element.tags)
+            for child in element.children:
+                output.AddChildToGrid(self.GenerateElement(child, output))
+            output.UpdateItemGrid(50)
+
+        elif element.name == 'grid':
+            output = self.GenerateChildrenInGrid(element)
+        elif element.name == "horizontal":
+            output = self.GenerateHorizontalLayout(element, root=root)
+        elif element.name == "vertical":
+            output = self.GenerateVerticalLayout(element, root=root)
+        elif element.name == "notebook":
+            output = self.GenerateNotebook(element, root=root)
+        if hasRef:
+            self.elements[ref] = output
+        return output
+
+    def GenerateChildren(self, parent, root):
         for element in parent.children:
 
             if element.name == "title":
                 self.title = self.root.title(element.default)
-
+            elif element.name == "style":
+                self.AddStyle(element)
             elif element.name == "body" or element.name == "head":
-                self.GenerateChildren(element)
+                widgets = self.GenerateChildren(element, root)
                 if element.name == "body":
                     minWidth = element.tags.pop('minWidth', 0)
                     minHeight = element.tags.pop('minHeight', 0)
                     self.root.minsize(minWidth, minHeight)
+                for widget in widgets:
+                    yield widget
             elif element.name == "menu":
-                self.GenerateMenuBar(element)
+                self.GenerateMenuBar(element, root)
             else:
-                widget = self.GenerateElement(element)
+                widget = self.GenerateElement(element, root)
                 widget.grid(sticky=N+S+W+E)
+                yield widget
+
+    def AddStyle(self, style):
+        # style always needs a reference to be used by other elements
+        ref = style.tags.pop('ref', '')
+        if ref == '':
+            raise Exception('Style has no reference')
+        self.styles[ref] = style.tags
 
     def GenerateChildrenInGrid(self, grid):
         label = grid.tags.pop('label', '')
@@ -347,6 +422,8 @@ class Window:
             else:
                 gridX = element.tags.pop("gridx", 0)
                 gridY = element.tags.pop("gridy", 0)
+                pady = element.tags.pop("pady", 0)
+                padx = element.tags.pop("padx", 0)
                 if gridX > columns:
                     columns = gridX  # If this row or column is the biggest
                 if gridY > rows:  # update the value so all unconfiged
@@ -360,7 +437,7 @@ class Window:
                                column=gridX,
                                rowspan=gridSpanY,
                                columnspan=gridSpanX,
-                               sticky=stick)
+                               sticky=stick, padx=padx, pady=pady)
 
         for row in range(rows+1):  # set defaults
             if row not in configuredRows:
@@ -371,10 +448,7 @@ class Window:
         gridFrame.grid(sticky=W+E+N+S)
         return gridFrame
 
-    def GenerateMenuBar(self, menubar, root=None):  # menubar - element
-        if root == None:
-            root = self.root
-
+    def GenerateMenuBar(self, menubar, root):  # menubar - element
         menubarWidget = Menu(root, tearoff=0)
 
         for item in menubar.children:
@@ -385,7 +459,9 @@ class Window:
             elif item.name == "command":
                 function = item.tags.pop('command', '')
                 if function != '':
-                    item.tags['command'] = lambda: self.OnCallback(function)
+                    item.tags['command'] = lambda f=function: self.OnCallback(
+                        f)
+
                 menubarWidget.add(item.name, label=item.default, **item.tags)
             else:
                 boolVar = BooleanVar()
@@ -400,11 +476,9 @@ class Window:
             root.add_cascade(
                 label=menubar.tags['label'], menu=menubarWidget, underline=0)
 
-    def GenerateNotebook(self, notebook, root=None):
+    def GenerateNotebook(self, notebook, root):
         # Make each child of notebook object their own page
         # return the notebook object so it can be used elsewhere
-        if root == None:
-            root = self.root
         widget = ttk.Notebook(root)
         for index, child in enumerate(notebook.children):
             tabName = child.tags.pop("tabname", "Tab {0}".format(index+1))
@@ -416,50 +490,97 @@ class Window:
             widget.add(tabFrame, text=tabName)
         return widget
 
-    def GenerateVerticalLayout(self, vertical, root=None):
-        if root == None:
-            root = self.root
+    def GenerateVerticalLayout(self, vertical, root):
+
+        scrolled = vertical.tags.pop("scrolled", False)
+
         frameWidget = Frame(root)
 
         frameWidget.columnconfigure(0, weight=1)
         for index, child in enumerate(vertical.children):
-            stick = child.tags.pop("sticky", N+E+W+S)
-            weight = child.tags.pop("weight", 0)
-            frameWidget.rowconfigure(index, weight=weight)
-            childWidget = self.GenerateElement(child, root=frameWidget)
-            childWidget.grid(row=index, sticky=stick)
+            self.AddChildToVerticalLayout(child, index, frameWidget)
         return frameWidget
+
+    def AddChildToVerticalLayout(self, child, index, parent):
+        stick = child.tags.pop("sticky", N+E+W+S)
+        pady = child.tags.pop("pady", 0)
+        padx = child.tags.pop("padx", 0)
+        weight = child.tags.pop("weight", 0)
+        parent.rowconfigure(index, weight=weight)
+        childWidget = self.GenerateElement(child, parent)
+        childWidget.grid(row=index, sticky=stick, pady=pady, padx=padx)
 
     def GenerateHorizontalLayout(self, horizontal, root=None):
         if root == None:
             root = self.root  # same as vertical but set coumn not row
         frameWidget = Frame(root)
+        frameWidget.rowconfigure(0, weight=1)
         for index, child in enumerate(horizontal.children):
-            frameWidget.columnconfigure(index, weight=1)
+            stick = child.tags.pop("sticky", N+E+W+S)
+            pady = child.tags.pop("pady", 0)
+            padx = child.tags.pop("padx", 0)
+            weight = child.tags.pop("weight", 1)
+            frameWidget.columnconfigure(index, weight=weight)
             childWidget = self.GenerateElement(child, root=frameWidget)
-            childWidget.grid(column=index, row=0, sticky=N+E+S+W)
+            childWidget.grid(column=index, row=0,
+                             sticky=stick, pady=pady, padx=padx)
         return frameWidget
 
     def OnCallback(self, name, *args):
         if name in self.callbacks:
-            self.callbacks[name]()
+            self.callbacks[name](*args)
 
-    def __init__(self, tkml):
+    def __init__(self, tkml, root=None, pages={}, customClasses={}):
+        """Create A TKML Window"""
         # compile tkml to elements
-        root = Element('tkml', tkml).children[0]
+        pages['root'] = tkml
 
-        self.textVars = {}
-        self.intVars = {}
+        self.customs = customClasses
+        # Element('tkml', tkml).children[0]
+
+        self.values = {}
         self.callbacks = {}
+        self.elements = {}
+        self.styles = {}
 
-        self.root = Tk()
+        if root == None:
+            self.root = Tk()
+        else:
+            self.root = root
 
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
-        self.GenerateChildren(root)
+
+        for item in pages.keys():
+            markup = pages[item]
+            rootElement = decode.Decode(markup)
+
+            rootWidget = next(self.GenerateChildren(rootElement, self.root))
+
+            rootWidget.grid(column=0, row=0)
+            pages[item] = rootWidget
+
+        self.pages = pages
+        self.pages['root'].tkraise()
+
+    def ChangeToPage(self, page):
+        # functions avalible to start the window
+        self.pages[page].tkraise()
 
     def mainloop(self):
         self.root.mainloop()
+
+    def AppendElements(self, tkml, parent):
+        """Adds an element to a vertical element group"""
+        # TODO Allow this to work on all widget tpyes, not just vertical
+
+        rootElement = decode.Decode(tkml)
+        if rootElement.name == 'body':  # if only one element needs to be added the compiler dies :(
+            # temporary fix to this by wrapping the object in the body tag before compiling
+            rootElement = rootElement.children[0]
+        childIndex = len(parent.children.values())
+
+        self.AddChildToVerticalLayout(rootElement, childIndex, parent)
 
 
 if __name__ == '__main__':

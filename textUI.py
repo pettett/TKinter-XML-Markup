@@ -1,6 +1,6 @@
 import tkml
-#simple test ui featuring every element.
-#when every element is changed a message will be written to console
+# simple test ui featuring every element.
+# when every element is changed a message will be written to console
 markup = '''
 <tkml>
 <head>
@@ -14,8 +14,8 @@ markup = '''
         <p gridx=0 gridy=0>Button</p>
         <button callback="buttonOnePressed" gridx=1 gridy=0>Press Me!</button>
         
-        <p gridx=0 gridy=1>Input</p>
-        <input varname="InputValue" callback="InputValueChanged" gridx=1 gridy=1></input>
+        <p gridx=0 gridy=1>String Field</p>
+        <field varname="InputValue" callback="InputValueChanged" gridx=1 gridy=1></field>
         <p gridx=2 gridy=1 varname="inputValueText">Value</p>
 
         <p gridy=2>Radio Buttons</p>
@@ -38,26 +38,37 @@ markup = '''
 </body>
 </tkml>
 '''
+
+
 def ButtonOnePressed():
     print("Button one pressed")
+
+
 def InputValueChanged():
-    print("Input value changed to {0}".format( window.textVars['InputValue'].get()))
-    window.textVars['inputValueText'].set(window.textVars['InputValue'].get())
+    print("Input value changed to {0}".format(
+        window.values['InputValue'].get()))
+    window.values['inputValueText'].set(window.values['InputValue'].get())
+
+
 def RadioButtonsChanged():
-    print(window.intVars['radio1'].get())
-    window.textVars['radio-value'].set(window.intVars['radio1'].get())
+    print(window.values['radio1'].get())
+    window.values['radio-value'].set(window.values['radio1'].get())
+
+
 def DropdownChanged():
-    window.textVars['DropdownValue'].set(window.textVars['Dropdown'].get())
+    window.values['DropdownValue'].set(window.values['Dropdown'].get())
+
+
 def SpinboxChanged():
-    window.textVars['SpinboxValueOut'].set(window.textVars['SpinboxValue'].get())
+    window.values['SpinboxValueOut'].set(
+        window.values['SpinboxValue'].get())
+
+
 def SliderChanged():
-    window.textVars['SliderValueOutput'].set(window.textVars['slider'].get())
+    window.values['SliderValueOutput'].set(window.values['slider'].get())
+
 
 window = tkml.Window(markup)
-window.callbacks['buttonOnePressed'] = ButtonOnePressed
-window.callbacks['InputValueChanged'] = InputValueChanged
-window.callbacks['OnDropdownChanged'] = DropdownChanged
-window.callbacks['radio1'] = RadioButtonsChanged
-window.callbacks['OnSpinboxChange'] = SpinboxChanged
-window.callbacks['OnSliderChanged'] = SliderChanged
+window.callbacks = {'buttonOnePressed': ButtonOnePressed, 'InputValueChanged': InputValueChanged, 'OnDropdownChanged': DropdownChanged,
+                    'radio1': RadioButtonsChanged, 'OnSpinboxChange': SpinboxChanged, 'OnSliderChanged': SliderChanged}
 window.mainloop()
