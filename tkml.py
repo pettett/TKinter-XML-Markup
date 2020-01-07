@@ -10,6 +10,7 @@ class Label(Label):
         options["font"] = (font, fontSize)
         super().__init__(master, **options)
 
+# added comments
 
 
 '''#help
@@ -106,22 +107,21 @@ layout = '''
 currentElement = ""
 
 consts = {
-    "HORIZONTAL":HORIZONTAL,
-    "VERTICAL":VERTICAL,
-    "SINGLE":SINGLE,
-    "EXTENDED":EXTENDED,
-    "MULTIPLE":MULTIPLE,
-    "BROWSE":BROWSE
+    "HORIZONTAL": HORIZONTAL,
+    "VERTICAL": VERTICAL,
+    "SINGLE": SINGLE,
+    "EXTENDED": EXTENDED,
+    "MULTIPLE": MULTIPLE,
+    "BROWSE": BROWSE
 }
 
 
-
-def ReadTags(tagsString): #return name, dictionary of tags:tags value
+def ReadTags(tagsString):  # return name, dictionary of tags:tags value
     tagsList = tagsString.split(' ')
     # seperate out tags
     name = tagsList[0]
     tagsDict = {}  # Each tag is stored in a pair TAGNAME=VALUE
-    
+
     for i in range(1, len(tagsList)):
         tag = tagsList[i].split('=')
         try:
@@ -141,6 +141,7 @@ def ReadTags(tagsString): #return name, dictionary of tags:tags value
             raise Exception("incorrect tags in {0}".format(tagsString))
     return name, tagsDict
 
+
 class Element:
 
     def CompileTKML(self, html):  # TODO Add support for nested objects - cascade within cascade
@@ -155,11 +156,10 @@ class Element:
             if startBrocket == -1:
                 ended = True
             else:
-                name, tagsDict =ReadTags( workingString[startBrocket+1:endTagsBrocket])
+                name, tagsDict = ReadTags(
+                    workingString[startBrocket+1:endTagsBrocket])
 
-                #find next open brocket after end
-
-
+                # find next open brocket after end
 
                 targetEndTag = "</{0}>".format(name)
                 startTerminatorBrocket = workingString.find(targetEndTag)
@@ -176,9 +176,6 @@ class Element:
                     elements.append(Element(name, defaultTag, **tagsDict))
         return elements
 
-            
-
-
     def __init__(self, name, defaultTag, **kwargs):
         self.name = name
         self.default = defaultTag
@@ -186,14 +183,11 @@ class Element:
         self.children = []
         # compile chilren code
         canCompile = [
-            'tkml', 'body', 'head', 'grid',"vertical",
-            "horizontal",'notebook', "menu", "cascade"]
+            'tkml', 'body', 'head', 'grid', "vertical",
+            "horizontal", 'notebook', "menu", "cascade"]
         for item in canCompile:
             if item in name:
                 self.children = self.CompileTKML(defaultTag)
-
-
-
 
 
 class Window:
@@ -201,19 +195,20 @@ class Window:
         if root == None:
             root = self.root
 
-        callback = element.tags.pop('callback','')
+        callback = element.tags.pop('callback', '')
         hasCallback = callback != ''
-        varname= element.tags.pop("varname", "")
+        varname = element.tags.pop("varname", "")
         hasVariable = varname != ''
-        image = element.tags.pop("image",'')
+        image = element.tags.pop("image", '')
         if image != '':
             image = PhotoImage(file=image)
 
-        usesStringVar = ['p','input','dropdown','spinbox']
+        usesStringVar = ['p', 'input', 'dropdown', 'spinbox']
         if element.name in usesStringVar:
             stringVar = StringVar()
             if hasCallback:
-                stringVar.trace('w',lambda *args: self.OnCallback(callback,*args))
+                stringVar.trace(
+                    'w', lambda *args: self.OnCallback(callback, *args))
             if hasVariable:
                 self.textVars[varname] = stringVar
             element.tags['textvariable'] = stringVar
@@ -222,24 +217,25 @@ class Window:
             stringVar.set(element.default)
             if image == '':
                 return Label(root, text=element.default, **element.tags)
-            else:#set up label with image object
-                imageLabel = Label(root,image=image, text=element.default, **element.tags)
-                imageLabel.image = image #keep reference so GC does not destroy it
+            else:  # set up label with image object
+                imageLabel = Label(root, image=image,
+                                   text=element.default, **element.tags)
+                imageLabel.image = image  # keep reference so GC does not destroy it
                 return imageLabel
 
-        elif element.name== "progressbar":
-            #controller must have access to value and like of bar
-            #functions start,stop and step up to 100%
+        elif element.name == "progressbar":
+            # controller must have access to value and like of bar
+            # functions start,stop and step up to 100%
             bar = ttk.Progressbar()
-            
+
             return bar
         elif element.name == "text":
-            scrolled = element.tags.pop('scrolled',False)
+            scrolled = element.tags.pop('scrolled', False)
             if scrolled:
                 text = scrolledtext.ScrolledText(root)
             else:
                 text = Text(root)
-            text.insert(END,element.default)
+            text.insert(END, element.default)
             return text
         elif element.name == "input":
             return Entry(root, **element.tags)
@@ -251,57 +247,59 @@ class Window:
                 element.tags["command"] = lambda: self.OnCallback(callback)
             return Button(root, **element.tags)
 
-        elif element.name=="checkbutton":
+        elif element.name == "checkbutton":
             if element.default != "":
                 element.tags['text'] = element.default
-            return Checkbutton(root,**element.tags)
+            return Checkbutton(root, **element.tags)
 
-        elif element.name=="radiobutton":
+        elif element.name == "radiobutton":
             if element.default != "":
                 element.tags['text'] = element.default
-            var = element.tags.pop("group","defaultgroup")
+            var = element.tags.pop("group", "defaultgroup")
             if var not in self.intVars:
-                self.intVars[var] = IntVar() 
-                self.intVars[var].trace("w",lambda *args: self.OnCallback(var))
-            return Radiobutton(root,variable=self.intVars[var],**element.tags)
-        
+                self.intVars[var] = IntVar()
+                self.intVars[var].trace(
+                    "w", lambda *args: self.OnCallback(var))
+            return Radiobutton(root, variable=self.intVars[var], **element.tags)
+
         elif element.name == "dropdown":
             options = element.default.split(';')
             stringVar.set(options[0])
-            return OptionMenu(root,stringVar,*options)
+            return OptionMenu(root, stringVar, *options)
 
         elif element.name == "slider":
-            element.tags['from_'] = element.tags.pop('min',0)
-            element.tags['to'] = element.tags.pop("max",1)
+            element.tags['from_'] = element.tags.pop('min', 0)
+            element.tags['to'] = element.tags.pop("max", 1)
             if hasVariable:
                 doubleVar = DoubleVar()
                 if hasCallback:
-                    doubleVar.trace('w',lambda *args: self.OnCallback(callback))
+                    doubleVar.trace(
+                        'w', lambda *args: self.OnCallback(callback))
                 element.tags['variable'] = doubleVar
                 self.textVars[varname] = doubleVar
-            return Scale(root,**element.tags)
-        
+            return Scale(root, **element.tags)
+
         elif element.name == "spinbox":
             spins = element.default.split(';')
 
-            return Spinbox(root,values=spins,**element.tags)
+            return Spinbox(root, values=spins, **element.tags)
 
         elif element.name == "listbox":
             options = element.default.split(';')
-            #if user wants scrollbar link scrollbar object to list events
+            # if user wants scrollbar link scrollbar object to list events
 
-            box = Listbox(root,**element.tags)
+            box = Listbox(root, **element.tags)
             for option in options:
-                box.insert(END,option)
+                box.insert(END, option)
             return box
         elif "grid" in element.name:
             return self.GenerateChildrenInGrid(element)
         elif element.name == "horizontal":
-            return self.GenerateHorizontalLayout(element,root=root)
+            return self.GenerateHorizontalLayout(element, root=root)
         elif element.name == "vertical":
-            return self.GenerateVerticalLayout(element,root=root)
+            return self.GenerateVerticalLayout(element, root=root)
         elif element.name == "notebook":
-            return self.GenerateNotebook(element,root=root)
+            return self.GenerateNotebook(element, root=root)
 
     def GenerateChildren(self, parent):
         for element in parent.children:
@@ -322,54 +320,54 @@ class Window:
                 widget.grid(sticky=N+S+W+E)
 
     def GenerateChildrenInGrid(self, grid):
-        label = grid.tags.pop('label','')
-        defaultColumnWeight = grid.tags.pop('defaultcolumnweight',0)
-        defaultRowWeight=grid.tags.pop('defaultrowweight',0)
+        label = grid.tags.pop('label', '')
+        defaultColumnWeight = grid.tags.pop('defaultcolumnweight', 0)
+        defaultRowWeight = grid.tags.pop('defaultrowweight', 0)
 
         if label == '':
             gridFrame = Frame(self.root, **grid.tags)
         else:
             grid.tags['text'] = label
-            gridFrame = LabelFrame(self.root,**grid.tags)
+            gridFrame = LabelFrame(self.root, **grid.tags)
 
-        columns=1
+        columns = 1
         configuredColumns = []
-        rows=1
+        rows = 1
         configuredRows = []
 
         for element in grid.children:
             if element.name == 'rowconfig':
-                row=element.tags.pop('row',0)
+                row = element.tags.pop('row', 0)
                 configuredRows.append(row)
-                gridFrame.columnconfigure(row,element.tags)
+                gridFrame.columnconfigure(row, element.tags)
             elif element.name == 'columnconfig':
-                column=element.tags.pop("column",0)
+                column = element.tags.pop("column", 0)
                 configuredColumns.append(column)
-                gridFrame.columnconfigure(column,element.tags)
+                gridFrame.columnconfigure(column, element.tags)
             else:
                 gridX = element.tags.pop("gridx", 0)
                 gridY = element.tags.pop("gridy", 0)
                 if gridX > columns:
-                    columns = gridX #If this row or column is the biggest
-                if gridY > rows: # update the value so all unconfiged
-                    rows = gridY #zones can be defaulted
-                stick = element.tags.pop('sticky','wen')
+                    columns = gridX  # If this row or column is the biggest
+                if gridY > rows:  # update the value so all unconfiged
+                    rows = gridY  # zones can be defaulted
+                stick = element.tags.pop('sticky', 'wen')
                 gridSpanX = element.tags.pop("gridspanx", 1)
                 gridSpanY = element.tags.pop("gridspany", 1)
 
                 generated = self.GenerateElement(element, gridFrame)
                 generated.grid(row=gridY,
-                            column=gridX,
-                            rowspan=gridSpanY,
-                            columnspan=gridSpanX,
-                            sticky=stick)
-        
-        for row in range(rows+1): # set defaults
+                               column=gridX,
+                               rowspan=gridSpanY,
+                               columnspan=gridSpanX,
+                               sticky=stick)
+
+        for row in range(rows+1):  # set defaults
             if row not in configuredRows:
-                gridFrame.rowconfigure(row,weight=defaultRowWeight)
+                gridFrame.rowconfigure(row, weight=defaultRowWeight)
         for column in range(columns+1):
             if column not in configuredColumns:
-                gridFrame.columnconfigure(column,weight=defaultColumnWeight)
+                gridFrame.columnconfigure(column, weight=defaultColumnWeight)
         gridFrame.grid(sticky=W+E+N+S)
         return gridFrame
 
@@ -385,18 +383,16 @@ class Window:
             elif item.name == "separator":
                 menubarWidget.add_separator()
             elif item.name == "command":
-                function = item.tags.pop('command','')
-                if function != '': 
-                    item.tags['command'] = lambda:self.OnCallback(function)
-                menubarWidget.add(item.name, label=item.default,**item.tags)
+                function = item.tags.pop('command', '')
+                if function != '':
+                    item.tags['command'] = lambda: self.OnCallback(function)
+                menubarWidget.add(item.name, label=item.default, **item.tags)
             else:
                 boolVar = BooleanVar()
-                value = item.tags.pop("value",True)
+                value = item.tags.pop("value", True)
                 boolVar.set(value)
-                
-                menubarWidget.add(item.name, label=item.default)
-                
 
+                menubarWidget.add(item.name, label=item.default)
 
         if root == self.root:
             self.root.config(menu=menubarWidget)
@@ -404,64 +400,66 @@ class Window:
             root.add_cascade(
                 label=menubar.tags['label'], menu=menubarWidget, underline=0)
 
-    def GenerateNotebook(self,notebook,root=None):
-        #Make each child of notebook object their own page
-        #return the notebook object so it can be used elsewhere
+    def GenerateNotebook(self, notebook, root=None):
+        # Make each child of notebook object their own page
+        # return the notebook object so it can be used elsewhere
         if root == None:
             root = self.root
         widget = ttk.Notebook(root)
-        for index,child in enumerate(notebook.children) :
-            tabName = child.tags.pop("tabname","Tab {0}".format(index+1))
+        for index, child in enumerate(notebook.children):
+            tabName = child.tags.pop("tabname", "Tab {0}".format(index+1))
             tabFrame = Frame(widget)
-            tabFrame.rowconfigure(0,weight=1)
-            tabFrame.columnconfigure(0,weight=1)
-            element = self.GenerateElement(child,root=tabFrame)
+            tabFrame.rowconfigure(0, weight=1)
+            tabFrame.columnconfigure(0, weight=1)
+            element = self.GenerateElement(child, root=tabFrame)
             element.grid(sticky='NSEW')
-            widget.add(tabFrame,text= tabName)
+            widget.add(tabFrame, text=tabName)
         return widget
 
-    def GenerateVerticalLayout(self,vertical,root=None):
-        if root==None:root=self.root
+    def GenerateVerticalLayout(self, vertical, root=None):
+        if root == None:
+            root = self.root
         frameWidget = Frame(root)
-        
-        frameWidget.columnconfigure(0,weight=1)
+
+        frameWidget.columnconfigure(0, weight=1)
         for index, child in enumerate(vertical.children):
-            stick = child.tags.pop("sticky",N+E+W+S)
-            weight= child.tags.pop("weight",0)
-            frameWidget.rowconfigure(index,weight=weight)
-            childWidget = self.GenerateElement(child,root=frameWidget)
+            stick = child.tags.pop("sticky", N+E+W+S)
+            weight = child.tags.pop("weight", 0)
+            frameWidget.rowconfigure(index, weight=weight)
+            childWidget = self.GenerateElement(child, root=frameWidget)
             childWidget.grid(row=index, sticky=stick)
         return frameWidget
 
-    def GenerateHorizontalLayout(self,horizontal,root=None):
-        if root==None:root=self.root # same as vertical but set coumn not row
+    def GenerateHorizontalLayout(self, horizontal, root=None):
+        if root == None:
+            root = self.root  # same as vertical but set coumn not row
         frameWidget = Frame(root)
         for index, child in enumerate(horizontal.children):
-            frameWidget.columnconfigure(index,weight=1)
-            childWidget = self.GenerateElement(child,root=frameWidget)
-            childWidget.grid(column=index,row=0, sticky=N+E+S+W)
+            frameWidget.columnconfigure(index, weight=1)
+            childWidget = self.GenerateElement(child, root=frameWidget)
+            childWidget.grid(column=index, row=0, sticky=N+E+S+W)
         return frameWidget
-    def OnCallback(self,name,*args):
+
+    def OnCallback(self, name, *args):
         if name in self.callbacks:
             self.callbacks[name]()
 
     def __init__(self, tkml):
-        #compile tkml to elements
+        # compile tkml to elements
         root = Element('tkml', tkml).children[0]
-        
+
         self.textVars = {}
         self.intVars = {}
-        self.callbacks={}
+        self.callbacks = {}
 
         self.root = Tk()
-        
+
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
         self.GenerateChildren(root)
 
     def mainloop(self):
         self.root.mainloop()
-
 
 
 if __name__ == '__main__':
