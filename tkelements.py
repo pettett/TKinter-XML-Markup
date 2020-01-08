@@ -140,10 +140,10 @@ if __name__ == "__main__":
             name = tags.pop('label', 'New Item')
             callback = tags.pop('command', '')
             changetopage = tags.pop('changetopage', '')
-            index = tags.pop('index', 0)
+            index = int(tags.pop('index', 0))
             clearCol = tuple([int(x)
                               for x in tags.pop('bg', '1,1,1').split(',')])
-            speed = tags.pop('speed', 1)
+            speed = float(tags.pop('speed', 1))
 
             if callback == '' and changetopage == '':
                 self.callback = self.ElementPressed
@@ -158,7 +158,7 @@ if __name__ == "__main__":
             label = Label(self, text=name)
             images = 2
 
-            imageName = "image{0}.gif".format(index % images)
+            #imageName = "image{0}.gif".format(index % images)
             '''
             photo = PhotoImage(file=imageName)
             image = Label(self, image=photo, height=100)
@@ -209,10 +209,10 @@ if __name__ == "__main__":
     <vertical>
     <p>The is page 1!</p>
     <autogrid>
-    <customframe changetopage="Items" label="Items" index=0 speed=1 bg="1,1,0"/>
-    <customframe command='test' label="Blocks" index=1 speed=-1 bg="1,0,1"/>
-    <customframe command='test' label="Blocks" index=1 speed=-2 bg="0,0,1"/>
-    <customframe command='test' label="Blocks" index=1 speed=2 bg="0,1,0"/>
+    <CustomFrame changetopage="Items" label="Items" index="0" speed="1" bg="1,1,0"/>
+    <CustomFrame command='test' label="Blocks" index="1" speed="-1" bg="1,0,1"/>
+    <CustomFrame command='test' label="Blocks" index="1" speed="-2" bg="0,0,1"/>
+    <CustomFrame command='test' label="Blocks" index="1" speed="2" bg="0,1,0"/>
     </autogrid>
     </vertical>
     </body>
@@ -251,8 +251,12 @@ if __name__ == "__main__":
         'Blocks': blocksGridMarkup
     }
 
-    window = tkml.Window(FirstLayerMarkup, None, pages,
-                         {"customframe": CustomFrame})
+    window = tkml.Window(FirstLayerMarkup, pages=pages, generate=False)
+
+    window.custom(CustomFrame)
+
+    window.GenerateWindow()
+
     window.callbacks['test'] = Test
     window.mainloop()
 
