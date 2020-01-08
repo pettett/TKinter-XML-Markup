@@ -585,13 +585,15 @@ class Window:
 
         self.AddChildToVerticalLayout(rootElement, childIndex, parent)
 
-    def __enter__():
+    def __enter__(self):
         # on enter with statement
+        return self
 
-    def __exit__():
+    def __exit__(self, exc_type, exc_val, exc_tb):
         # on exit with statement do mainloop
+        self.mainloop()
 
 
 if __name__ == '__main__':
-    window = Window(layout)
-    window.mainloop()
+    with Window(layout) as window:
+        pass

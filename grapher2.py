@@ -288,19 +288,16 @@ lineColors = [
     (.40, 1, 1)
 ]
 
-window = tkml.Window(markup, None, {}, {'customframe': GraphFrame})
+with tkml.Window(markup, customClasses={'customframe': GraphFrame}) as window:
+    window.callbacks = {"generategraph": GenerateGraph,
+                        "addline": AddLine}
 
-window.callbacks = {"generategraph": GenerateGraph,
-                    "addline": AddLine}
+    graphFrame = window.elements['graphframe']
 
-graphFrame = window.elements['graphframe']
-
-graphFrame.bind('<B1-Motion>', OnMouseDrag)
-graphFrame.bind('<MouseWheel>', MouseWheel)
-graphFrame.bind('<Shift-MouseWheel>', ShiftMouseWheel)
-graphFrame.bind('<Control-MouseWheel>', CtrlMouseWheel)
-graphFrame.bind('<ButtonRelease-1>', OnMouseUp)
-AddLine('x**2')
-GenerateGraph()
-
-window.mainloop()
+    graphFrame.bind('<B1-Motion>', OnMouseDrag)
+    graphFrame.bind('<MouseWheel>', MouseWheel)
+    graphFrame.bind('<Shift-MouseWheel>', ShiftMouseWheel)
+    graphFrame.bind('<Control-MouseWheel>', CtrlMouseWheel)
+    graphFrame.bind('<ButtonRelease-1>', OnMouseUp)
+    AddLine('x**2')
+    GenerateGraph()

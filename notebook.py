@@ -28,8 +28,8 @@ markup = '''
         <p style="title">This is page 4 with a cool styled title</p>
         <p>This is page 4 with a boring label</p>
     </vertical>
-    <p tabname="fone" image="image1.gif"></p>
-    <p tabname="devlin" image="image2.gif">s</p>
+    <p tabname="fone" image="image0.gif"></p>
+    <p tabname="devlin" image="image1.gif">s</p>
     <vertical>
         <field type=FLOAT callback="onfloatchange" varname="floatvalue"></field>
         <p varname="floatvalue"></p>
@@ -48,6 +48,5 @@ markup = '''
 </tkml>
 '''
 
-
-window = tkml.Window(markup)
-window.mainloop()
+with tkml.Window(markup) as window:
+    pass

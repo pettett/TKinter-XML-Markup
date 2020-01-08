@@ -102,6 +102,7 @@ class ColorPick:
         self.blueGradient = window.elements['bluegradient']
         self.greenGradient = window.elements['greengradient']
         self.colorPreview = window.elements['colorpreview']
+
         # setting colors defaults correct color and activates trace command that initalizes gradients
         self.r.set(r)
         self.g.set(g)
