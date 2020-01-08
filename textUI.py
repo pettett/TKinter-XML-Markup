@@ -40,12 +40,8 @@ markup = '''
 '''
 
 
-window = tkml.Window(markup)
-
-
-@window.callback
-def ButtonOnePressed():
-    print("Button one pressed")
-
-
-window.mainloop()
+with tkml.Window(markup) as window:
+    @window.callback
+    def ButtonOnePressed():
+        print("Button one pressed")
+    window.callbacks = {'buttonOnePressed': ButtonOnePressed}

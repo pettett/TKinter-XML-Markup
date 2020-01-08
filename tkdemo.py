@@ -73,20 +73,14 @@ layout = '''
 
         <colorfield gridy="5"/>
 
-        <listbox gridx="2" gridspany="6">option 1;option 2;option 3</listbox>
     </grid>
 
 </body>
 </tkml>
 '''
 
-window = Window(layout)
+with Window(layout) as window:
 
-@window.callback
-def OnButtonPress():
-    print("button pressed")
-
-window.mainloop()
-
-
-
+    @window.callback
+    def OnButtonPress():
+        print("button pressed")
