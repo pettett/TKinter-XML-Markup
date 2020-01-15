@@ -82,7 +82,7 @@ def remove_prefix(text, prefix):
 
 #used to decorate functions to call events
 
-class Window:
+class Window(object):
     def callback(self,func):
         self.callbacks[func.__name__] = func
         return func
@@ -428,7 +428,10 @@ class Window:
                 rows = gridAttributes["row"]  # zones can be defaulted
                 
             generated = self.GenerateElement(element, gridFrame)
-            generated.grid(**gridAttributes)
+            try:
+                generated.grid(**gridAttributes)
+            except:
+                raise Exception("Error Creating Element {}".format(element.tag))
 
         for row in range(rows+1):  # set defaults
             if row not in configuredRows:
@@ -471,7 +474,7 @@ class Window:
         # Make each child of notebook object their own page
         # return the notebook object so it can be used elsewhere
         widget = ttk.Notebook(root)
-        for index, child in enumerate(notebook.children):
+        for index, child in enumerate(notebook):
             tabName = child.attrib.pop("tabname", "Tab {0}".format(index+1))
             tabFrame = Frame(widget)
             tabFrame.rowconfigure(0, weight=1)
@@ -519,8 +522,18 @@ class Window:
         if tag in self.callbacks:
             self.callbacks[tag](*args)
 
-    def __init__(self, tkml, **kw):
+
+
+    def __init__(self, tkml="",filename="", **kw):
         """Create A TKML Window"""
+        if filename == "" and tkml == "":
+            raise Exception("No Markup Specified")
+        
+        elif tkml == "":
+            with open(filename) as f:
+                tkml = f.read()
+
+        self.values = {}
         # compile tkml to elements
         self.pages = kw.pop("pages",{})
         self.pages['root'] = tkml
@@ -528,7 +541,7 @@ class Window:
         self.customs = {}
         # Element('tkml', tkml).children[0]
 
-        self.values = {}
+        
         self.callbacks = {}
         self.elements = {}
         self.styles = {}
@@ -558,6 +571,26 @@ class Window:
 
         self.pages = pages
         self.pages['root'].tkraise()
+
+    #Turn window.values["varname"].get() into window.varname
+
+    def __getattr__(self,name:str):
+        if name == "values":
+            super().__getattribute__(name)
+
+        if name in self.values:
+            return self.values[name].get()
+        else:
+            getattr(self,name)
+
+    def __setattr__(self,name:str,value):
+        if name == "values":
+            object.__setattr__(self,name,value)
+
+        if name in self.values:
+            self.values[name].set(value)
+        else:
+            object.__setattr__(self,name,value)
 
     def ChangeToPage(self, page):
         # functions avalible to start the window
