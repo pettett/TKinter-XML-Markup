@@ -420,6 +420,7 @@ class Window(object):
             if element.tag.startswith(p):
                 continue
 
+[][]p[pooiuytrewqasdfghjkl;'\456321987/']
             gridAttributes = self.GetGridAttributes(element,p)
 
             if gridAttributes["column"] > columns:
@@ -441,6 +442,8 @@ class Window(object):
                 gridFrame.columnconfigure(column, weight=defaultColumnWeight)
         gridFrame.grid(sticky=W+E+N+S)
         return gridFrame
+
+
 
     def GenerateMenuBar(self, menubar, root):  # menubar - element
         menubarWidget = Menu(root, tearoff=0)
