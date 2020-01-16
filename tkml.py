@@ -420,7 +420,7 @@ class Window(object):
             if element.tag.startswith(p):
                 continue
 
-[][]p[pooiuytrewqasdfghjkl;'\456321987/']
+
             gridAttributes = self.GetGridAttributes(element,p)
 
             if gridAttributes["column"] > columns:
