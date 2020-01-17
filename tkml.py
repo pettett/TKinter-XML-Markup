@@ -121,6 +121,7 @@ class TKMLElement:
         args={}
         text = element.text
 
+
         styleName = element.attrib.pop("style",None)
 
 
@@ -249,6 +250,8 @@ class Window(object):
             for tag in styleTags.keys():
                 if tag not in element.attrib:
                     element.attrib[tag] = styleTags[tag]
+
+        print(element.tag)
 
         if element.tag == 'grid':
             output = self.GenerateChildrenInGrid(element)
