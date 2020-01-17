@@ -251,12 +251,12 @@ if __name__ == "__main__":
         'Blocks': blocksGridMarkup
     }
 
-    window = tkml.Window(FirstLayerMarkup, pages=pages, generate=False)
+    window = tkml.Window(FirstLayerMarkup,pages= pages,generate=False)
 
     window.custom(CustomFrame)
 
     window.GenerateWindow()
-
+    
     window.callbacks['test'] = Test
     window.mainloop()
 

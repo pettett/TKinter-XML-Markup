@@ -11,7 +11,6 @@ import tkml
 
 
 class GradientFrame(tkviewport.OpenGLFrame):
-    
     def __init__(self,w, root, **kw):
         self.color = kw.pop("color","red")
         self.direction = kw.pop("direction","quad")

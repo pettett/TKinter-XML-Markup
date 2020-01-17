@@ -46,7 +46,7 @@ if __name__ == '__main__':
     markup = '''
     <body>
     <horizontal>
-    <pygameframe frametime=100 ref="pygameframe" width=800 height=600/>
+    <pygameframe frametime="100" ref="pygameframe" width="800" height="600"/>
     <vertical>
         <button label="Reset_Maze" callback="newmaze"/>
         <button label="Up" callback="up"/>

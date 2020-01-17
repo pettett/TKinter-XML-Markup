@@ -4,18 +4,12 @@ from tkinter import ttk
 from tkinter import scrolledtext
 
 from tkelements import *
-import tkmlDecoder as decode
-import tkgradientframe
-import pygame_frame
+
+import pygame.image as im
+import base64
 
 import xml.etree.ElementTree as ET
 
-class Label(Label):
-    def __init__(self, master=None, **options):
-        font = options.pop("font", "TkDefaultFont")
-        fontSize = options.pop("fontsize", 9)
-        options["font"] = (font, fontSize)
-        super().__init__(master, **options)
 
 
 '''#help
@@ -57,6 +51,7 @@ class Label(Label):
 '''
 
 
+
 FLOAT = "FLOAT"
 INT = "INT"
 STRING = "STRING"
@@ -78,6 +73,158 @@ def remove_prefix(text, prefix):
         return text[len(prefix):]
     return text  # or whatever
 
+
+
+tkelements = {}
+
+TEXT = "elementtext"
+
+def CreateVariable(name,window,t=STRING,default=""):
+    if hasattr(window,name):
+        return getattr(window,name)
+
+    if t == STRING:
+        out = StringVar()
+    elif t == FLOAT:
+        out = DoubleVar()
+        default=float(default)
+    elif t == INT:
+        out = IntVar()
+        if default != "":
+            default = int(default)
+        else:
+            default = 0
+    out.set(default)
+    setattr(window,name,out)
+    return out
+
+class TKMLElement:
+    def __init__(self,name:str,tkobject:object,variableOption=False,hasFont=True,callbacks=False,variableType=STRING,textIsList=False,variableIsPositional=False,
+                variableTypeInput=False,textIsVariableDefault=False,textIsInserted=False,acceptImages=False,variableName="textvariable",**inputKeywords):
+        self.name = name
+        self.tkobject = tkobject
+        self.variableOption = variableOption
+        self.textIsVariableDefault = textIsVariableDefault
+        self.variableType = variableType
+        self.variableTypeInput = variableTypeInput
+        self.callbacks = callbacks
+        self.variableName = variableName
+        self.acceptImages=acceptImages
+        self.textIsInserted = textIsInserted
+        self.inputKeywords = inputKeywords
+        self.textIsList = textIsList
+        self.hasFont = hasFont
+        self.variableIsPositional = variableIsPositional
+        tkelements[name] = self
+
+    def GenerateElement(self,root,element,window):
+        args={}
+        text = element.text
+
+        styleName = element.attrib.pop("style",None)
+
+
+        if self.textIsList:
+            #turn the inputted text into a list
+            text = text.split(";")
+
+        if self.variableOption:
+            variableName = element.attrib.pop("varname",None)
+            if variableName != None:
+                default = ""
+                if self.textIsVariableDefault:
+                    default = text
+
+
+
+
+                t=self.variableType
+                if self.variableTypeInput:
+                    t = consts[element.attrib.pop("type","STRING")]
+
+                variable = CreateVariable(variableName,window,default=default,t=t)
+
+                variableTrace = element.attrib.pop("vartrace",None)
+                if variableTrace != None:
+                    #add a trace callback to the variable
+                    variable.trace("w",lambda *args: window.OnCallback(variableTrace,*args))
+
+
+                if not self.variableIsPositional:
+                    args[self.variableName] = variable
+
+        if self.hasFont:
+            fontFamily = element.attrib.pop("font.family", "TkDefaultFont")
+            fontSize = element.attrib.pop("font.size", 10)
+            fontSyles = [element.attrib.pop("font.bold", "False"), element.attrib.pop("font.italic", "False"),
+                         element.attrib.pop("font.underline", "False"), element.attrib.pop("font.overstrike", "False")]
+            fontSyles = [s.lower() == "true" for s in fontSyles]
+
+            styleNames = ["bold", "italic", "underline", "overstrike"]
+            styles = " ".join([b for s, b in zip(fontSyles, styleNames) if s])
+
+            args["font"] = (fontFamily, fontSize, styles)
+
+
+        if self.acceptImages:
+            imageName = element.attrib.pop("image",None)
+            if imageName != None:
+                #load in an image
+
+                photoImage = PhotoImage(file=imageName)
+                args["image"]=photoImage
+
+
+        if self.callbacks:
+            cname = element.attrib.pop("callback","")
+            if cname != "":
+                args["command"] = lambda: window.OnCallback(cname)
+
+        for widgetAtName,elementAtName in self.inputKeywords.items():
+            if elementAtName == TEXT:
+                #get the data from the text input
+                args[widgetAtName] = text
+            else:
+                args[widgetAtName] = element.attrib.pop(elementAtName,"")
+
+        args.update(element.attrib) # Any left over variables should be sent straight into tkinter
+
+        try:
+            if self.variableIsPositional:
+                widget = self.tkobject(root,variable,*text,**args)
+            else:
+                widget = self.tkobject(root,**args)
+        except Exception:
+            raise Exception("Error creating widget {} with {}".format(element.tag,element.attrib))
+
+        if self.textIsInserted:
+            widget.insert(END,text)
+
+        if self.acceptImages and imageName != None: #cache the image to stop it being gc'ed
+            widget.image = photoImage
+        return widget
+
+
+
+TKMLElement("field",Entry,variableOption=True,textIsVariableDefault=True,textIsInserted=True)
+TKMLElement("intfield",IntField,variableOption=True,textIsVariableDefault=True,textIsInserted=True,variableType=INT,variableName="intvariable")
+TKMLElement("checkbutton",Checkbutton,variableOption=True,variableType=INT,text=TEXT,variableName="variable")
+TKMLElement("floatfield",FloatField,variableOption=True,textIsVariableDefault=True,textIsInserted=True,variableType=FLOAT,variableName="floatvariable")
+
+TKMLElement("p",Label,text=TEXT,variableOption=True,textIsVariableDefault=True,acceptImages=True)
+TKMLElement("button",Button,text=TEXT,callbacks=True)
+
+TKMLElement("slider",Scale,to="max",from_="min")
+TKMLElement("radiobutton",Radiobutton,text=TEXT)
+TKMLElement("dropdown",OptionMenu,variableOption=True,variableIsPositional=True,textIsList=True)
+TKMLElement("spinbox",Spinbox)
+TKMLElement("canvas",Canvas,hasFont=False)
+
+TKMLElement("text",scrolledtext.Text,textIsInserted=True,textIsVariableDefault=True,variableOption=True,)
+TKMLElement("scrolledtext",scrolledtext.ScrolledText,textIsInserted=True,textIsVariableDefault=True,variableOption=True,)
+
+#TKMLElement("",)
+
 #event wrappers
 
 #used to decorate functions to call events
@@ -91,6 +238,9 @@ class Window(object):
         return obj
     # Functions used to create the window:
     def GenerateElement(self, element, root):
+        ref = element.attrib.pop("ref", '')
+
+        hasRef = ref != ''
 
         style = element.attrib.pop('style', '')
         if style != '':
@@ -99,6 +249,27 @@ class Window(object):
             for tag in styleTags.keys():
                 if tag not in element.attrib:
                     element.attrib[tag] = styleTags[tag]
+
+        if element.tag == 'grid':
+            output = self.GenerateChildrenInGrid(element)
+        elif element.tag == "horizontal":
+            output = self.GenerateHorizontalLayout(element, root=root)
+        elif element.tag == "vertical":
+            output = self.GenerateVerticalLayout(element, root=root)
+        elif element.tag == "notebook":
+            output = self.GenerateNotebook(element, root=root)
+        else:
+            output = tkelements[element.tag].GenerateElement(root,element,self)
+
+        if hasRef:
+            self.elements[ref] = output
+        return output
+
+
+
+
+
+
 
         callback = element.attrib.pop('callback', '')
         hasCallback = callback != ''
@@ -114,45 +285,17 @@ class Window(object):
         if image != '':
             image = PhotoImage(file=image)
 
-        ref = element.attrib.pop("ref", '')
 
-        hasRef = ref != ''
 
         output = None
 
-        usesStringVar = ['p', 'dropdown', 'spinbox']
-        if element.tag in usesStringVar:
-            if varname in self.values:
-                element.attrib['textvariable'] = self.values[varname]
-            else:
-                stringVar = StringVar()
-                if hasCallback:
-                    stringVar.trace(
-                        'w', lambda *a: self.OnCallback(callback, *callbackArgs))
-                if hasVariable:
-                    self.values[varname] = stringVar
-                element.attrib['textvariable'] = stringVar
-        if element.tag in self.customs:
-            output = self.customs[element.tag](self, root,  **element.attrib)
 
-        elif element.tag == "p":
-            if type(element.attrib['textvariable']) is StringVar:
-                element.attrib['textvariable'].set(element.text)
-            if element.text != '':
-                element.attrib['text'] = element.text
-            if image == '':
-                output = Label(root, **element.attrib)
-            else:  # set up label with image object
-                imageLabel = Label(root, image=image, **element.attrib)
-                imageLabel.image = image  # keep reference so GC does not destroy it
-                output = imageLabel
-
-        elif element.tag == "progressbar":
+        if element.tag == "progressbar":
             # controller must have access to value and like of bar
             # functions start,stop and step up to 100%
             bar = ttk.Progressbar()
             output = bar
-            
+
         elif element.tag == "text":
             scrolled = element.attrib.pop('scrolled', False)
             if scrolled:
@@ -165,117 +308,16 @@ class Window(object):
         elif element.tag == 'seperator':
             output = ttk.Separator(root, **element.attrib)
 
-        elif element.tag == "field":
 
-            # Get type of entry - defaults to string for convience
-            valueType = element.attrib.pop("type", STRING)
-            vartagname = 'textvariable'
-            if valueType == INT:
-                vartagname = 'intvariable'
-            elif valueType == FLOAT:
-                vartagname = 'floatvariable'
-
-            if varname in self.values:  # already variable defined, use that
-                element.attrib[vartagname] = self.values[varname]
-
-            else:  # create a new variable
-                if valueType == FLOAT:
-                    # setup float variable
-                    variable = DoubleVar()
-
-                elif valueType == STRING:
-                    # setup string varaible
-                    variable = StringVar()
-
-                elif valueType == INT:
-                    # setup int variable
-                    variable = IntVar()
-
-                if hasCallback:
-                    variable.trace(
-                        'w', lambda *args: self.OnCallback(callback, *callbackArgs))
-                if hasVariable:
-                    self.values[varname] = variable
-                element.attrib[vartagname] = variable
-
-            # return the correct type
-            if valueType == FLOAT:
-                output = FloatField(root, **element.attrib)
-            elif valueType == INT:
-                output = IntField(root, **element.attrib)
-            elif valueType == STRING:
-                output = Entry(root, **element.attrib)
-
-        # custom widgets
-        elif element.tag == "colorfield":
-            output = tkgradientframe.ColorField(root, **element.attrib)
         elif element.tag == "pygameframe":
             element.attrib['flags'] = element.text.split(';')
             output = pygame_frame.PygameFrame(root, **element.attrib)
 
-        elif element.tag == "button":
-            if element.text != "":
-                element.attrib['text'] = element.text
-            if 'label' in element.attrib:
-                element.attrib['text'] = element.attrib.pop('label', '')
-            if hasCallback:  # lambda used to pass callback tag so function can be applied
-                element.attrib["command"] = lambda: self.OnCallback(
-                    callback, *callbackArgs)
-
-            # change to page tag will change the selected page when the button is pressed
-            changeToPage = element.attrib.pop('changetopage', '')
-            if changeToPage != '':
-                element.attrib['command'] = lambda x=changeToPage: self.ChangeToPage(
-                    x)
-
-            output = Button(root, **element.attrib)
-
         elif element.tag == "canvas":
             output = Canvas(root, **element.attrib)
 
-        elif element.tag == "checkbutton":
-            if element.text != "":
-                element.attrib['text'] = element.text
-            output = Checkbutton(root, **element.attrib)
-
-        elif element.tag == "radiobutton":
-            if element.text != "":
-                element.attrib['text'] = element.text
-            var = element.attrib.pop("group", "defaultgroup")
-            if var not in self.values:
-                self.values[var] = IntVar()
-                self.values[var].trace(
-                    "w", lambda *a: self.OnCallback(callback, *callbackArgs))
-            output = Radiobutton(
-                root, variable=self.values[var], **element.attrib)
-
-        elif element.tag == "dropdown":
-            options = element.text.split(';')
-            stringVar.set(options[0])
-            output = OptionMenu(root, stringVar, *options)
-
-        elif element.tag == "slider":
-            element.attrib['from_'] = int( element.attrib.pop('min', 0))
-            element.attrib['to'] = int( element.attrib.pop("max", 1))
-            if hasVariable:
-                vartype = element.attrib.pop('type', FLOAT)
-                if vartype == FLOAT:
-                    variable = DoubleVar()
-                elif vartype == INT:
-                    variable = IntVar()
-                defaultValue = element.attrib.pop('default', element.attrib['from_'])
-                variable.set(defaultValue)
-                if hasCallback:
-                    variable.trace(
-                        'w', lambda *a: self.OnCallback(callback, *callbackArgs))
-                element.attrib['variable'] = variable
-                self.values[varname] = variable
-                
-            output = Scale(root, **element.attrib)
-
-        elif element.tag == "spinbox":
-            spins = element.text.split(';')
-            output = Spinbox(root, values=spins, **element.attrib)
+        elif element.tag == "gradient":  # inherits from canvas with function to draw gradients onto
+            output = colorpick.Gradient(root, **element.attrib)
 
         elif element.tag == "listbox":
             options = element.text.split(';')
@@ -293,17 +335,7 @@ class Window(object):
                 output.AddChildToGrid(self.GenerateElement(child, output))
             output.UpdateItemGrid(50)
 
-        elif element.tag == 'grid':
-            output = self.GenerateChildrenInGrid(element)
-        elif element.tag == "horizontal":
-            output = self.GenerateHorizontalLayout(element, root=root)
-        elif element.tag == "vertical":
-            output = self.GenerateVerticalLayout(element, root=root)
-        elif element.tag == "notebook":
-            output = self.GenerateNotebook(element, root=root)
-        if hasRef:
-            self.elements[ref] = output
-        return output
+
 
     def GenerateChildren(self, parent, root):
         for element in parent:
@@ -351,7 +383,7 @@ class Window(object):
                     value = child.text
                     break
         return outType(value)
-    
+
     def GetAttribs(self,root,att,prefix=""):
         if prefix =="":
             prefix = "{}.".format(root.tag)
@@ -370,8 +402,8 @@ class Window(object):
             "ipady" : self.GetAttrib(element,"ipady",int,0,p),
             "padx" : self.GetAttrib(element,"padx",int,0,p),
             "sticky" : element.attrib.pop('sticky', 'wen'),
-            "rowspan" : element.attrib.pop("gridspanx", 1),
-            "columnspan" : element.attrib.pop("gridspany", 1)
+            "rowspan" : self.GetAttrib(element,"gridspanx",int,1,p),
+            "columnspan" : self.GetAttrib(element,"gridspany",int,1,p)
             }
 
     def GetConfigureAttributes(self,element,p):
@@ -380,7 +412,7 @@ class Window(object):
             "minsize" : self.GetAttrib(element,"minsize",int,0,p),
             "pad" : self.GetAttrib(element,"pad",int,0,p)
             }
-    
+
     def GenerateChildrenInGrid(self, grid):
         label = grid.attrib.pop('label', '')
         defaultColumnWeight = grid.attrib.pop('defaultcolumnweight', 0)
@@ -403,9 +435,9 @@ class Window(object):
         for rowConfig in self.GetAttribs(grid,"rowconfig"):
             row = int(rowConfig.attrib.pop('row', 0))
             configuredRows.append(row)
-            
+
             gridFrame.rowconfigure(row, **rowConfig.attrib)
-            
+
         for columnConfig in self.GetAttribs(grid,"columnconfig"):
             column = int(columnConfig.attrib.pop("column", 0))
             configuredColumns.append(column)
@@ -415,11 +447,10 @@ class Window(object):
                 name = remove_prefix(child.tag,"columnconfig.")
                 at[name] = child.text
             gridFrame.columnconfigure(column, **at)
-                
+
         for element in grid:
             if element.tag.startswith(p):
                 continue
-
 
             gridAttributes = self.GetGridAttributes(element,p)
 
@@ -427,12 +458,10 @@ class Window(object):
                 columns = gridAttributes["column"]  # If this row or column is the biggest
             if gridAttributes["row"] > rows:  # update the value so all unconfiged
                 rows = gridAttributes["row"]  # zones can be defaulted
-                
+
             generated = self.GenerateElement(element, gridFrame)
-            try:
-                generated.grid(**gridAttributes)
-            except:
-                raise Exception("Error Creating Element {}".format(element.tag))
+            print(gridAttributes)
+            generated.grid(**gridAttributes)
 
         for row in range(rows+1):  # set defaults
             if row not in configuredRows:
@@ -442,8 +471,6 @@ class Window(object):
                 gridFrame.columnconfigure(column, weight=defaultColumnWeight)
         gridFrame.grid(sticky=W+E+N+S)
         return gridFrame
-
-
 
     def GenerateMenuBar(self, menubar, root):  # menubar - element
         menubarWidget = Menu(root, tearoff=0)
@@ -515,7 +542,7 @@ class Window(object):
             grida = self.GetGridAttributes(child,"horizontal.")
             grida["row"] = 0
             grida["column"] = index
-            
+
             childWidget = self.GenerateElement(child, root=frameWidget)
 
             childWidget.grid(**grida)
@@ -525,18 +552,8 @@ class Window(object):
         if tag in self.callbacks:
             self.callbacks[tag](*args)
 
-
-
-    def __init__(self, tkml="",filename="", **kw):
+    def __init__(self, tkml: str, **kw: dict) -> object:
         """Create A TKML Window"""
-        if filename == "" and tkml == "":
-            raise Exception("No Markup Specified")
-        
-        elif tkml == "":
-            with open(filename) as f:
-                tkml = f.read()
-
-        self.values = {}
         # compile tkml to elements
         self.pages = kw.pop("pages",{})
         self.pages['root'] = tkml
@@ -544,7 +561,7 @@ class Window(object):
         self.customs = {}
         # Element('tkml', tkml).children[0]
 
-        
+        self.values = {}
         self.callbacks = {}
         self.elements = {}
         self.styles = {}
@@ -554,11 +571,15 @@ class Window(object):
             self.root = Tk()
         else:
             self.root = root
-            
-        
+
+
         if (kw.pop("generate",True)):
             self.GenerateWindow()
-        
+    def __enter__(self):
+        print("entered")
+    def __exit__(self,*args):
+        self.mainloop()
+
     def GenerateWindow(self):
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
@@ -575,26 +596,6 @@ class Window(object):
         self.pages = pages
         self.pages['root'].tkraise()
 
-    #Turn window.values["varname"].get() into window.varname
-
-    def __getattr__(self,name:str):
-        if name == "values":
-            super().__getattribute__(name)
-
-        if name in self.values:
-            return self.values[name].get()
-        else:
-            getattr(self,name)
-
-    def __setattr__(self,name:str,value):
-        if name == "values":
-            object.__setattr__(self,name,value)
-
-        if name in self.values:
-            self.values[name].set(value)
-        else:
-            object.__setattr__(self,name,value)
-
     def ChangeToPage(self, page):
         # functions avalible to start the window
         self.pages[page].tkraise()
@@ -609,17 +610,10 @@ class Window(object):
         rootElement =  ET.fromstring(tkml)
         if rootElement.tag == 'body':  # if only one element needs to be added the compiler dies :(
             # temporary fix to this by wrapping the object in the body tag before compiling
-            rootElement = rootElement[0]
+            rootElement = rootElement.children[0]
         childIndex = len(parent.children.values())
 
         self.AddChildToVerticalLayout(rootElement, childIndex, parent)
 
-    def __enter__(self):
-        # on enter with statement
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # on exit with statement do mainloop
-        self.mainloop()
 
 
