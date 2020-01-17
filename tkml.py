@@ -121,6 +121,7 @@ class TKMLElement:
         args={}
         text = element.text
 
+
         styleName = element.attrib.pop("style",None)
 
 
@@ -249,6 +250,8 @@ class Window(object):
             for tag in styleTags.keys():
                 if tag not in element.attrib:
                     element.attrib[tag] = styleTags[tag]
+
+        print(element.tag)
 
         if element.tag == 'grid':
             output = self.GenerateChildrenInGrid(element)
@@ -552,11 +555,21 @@ class Window(object):
         if tag in self.callbacks:
             self.callbacks[tag](*args)
 
-    def __init__(self, tkml: str, **kw: dict) -> object:
+    def __init__(self, tkml: str = None,filename:str = None, **kw: dict) -> object:
         """Create A TKML Window"""
         # compile tkml to elements
+
         self.pages = kw.pop("pages",{})
-        self.pages['root'] = tkml
+
+        if tkml == None and filename == None:
+            raise Exception("No tkml or filename")
+        elif filename != None:
+            self.pages['root'] = ET.parse(filename).getroot()
+        else:
+            self.pages['root'] = ET.fromstring(tkml) 
+
+        
+        
 
         self.customs = {}
         # Element('tkml', tkml).children[0]
@@ -575,8 +588,11 @@ class Window(object):
 
         if (kw.pop("generate",True)):
             self.GenerateWindow()
+
     def __enter__(self):
         print("entered")
+        return self
+
     def __exit__(self,*args):
         self.mainloop()
 
@@ -584,9 +600,8 @@ class Window(object):
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
         pages = {}
-        for item in self.pages.keys():
-            markup = self.pages[item]
-            rootElement = ET.fromstring(markup)
+        for item in self.pages.keys(): 
+            rootElement = self.pages[item]
 
             rootWidget = next(self.GenerateChildren(rootElement, self.root))
 

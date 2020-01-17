@@ -63,7 +63,7 @@
                 <grid.gridx>1</grid.gridx>
             </field>
 
-            <button callback="OnButtonPress" gridy="1" label="Enter"/>
+            <button callback="OnButtonPress" gridy="1">Enter</button>
 
             <checkbutton gridy="2">Check Button</checkbutton>
             <slider gridy="2" gridx="1" min="0" max="100" orient="horizontal"></slider>
@@ -73,10 +73,10 @@
             <radiobutton gridy="3" value="0" gridx="1">Radio Option 2</radiobutton>
 
 
-            <dropdown gridy="4">Option 1;Option 2;Option 3</dropdown>
+            <!-- <dropdown gridy="4">Option 1;Option 2;Option 3</dropdown> -->
             <spinbox gridy="4" gridx="1">1;2;4;8;16</spinbox>
 
-            <colorfield gridy="5"/>
+
 
         </grid>
 
