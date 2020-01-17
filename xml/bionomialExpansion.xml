@@ -13,12 +13,19 @@
             <floatfield weight="1" varname="exponent2">0</floatfield>
         </horizontal>
 
+
+
         <p>all to the power of</p>
         <intfield varname="power">4</intfield>
 
+        <seperator pady="5"/>
         <checkbutton varname="asendingPowers" default="true">Asending Powers</checkbutton>
+        <seperator pady="5"/>
 
         <button callback="OnButtonPressed" keybind="*Return*">Calculate!</button>
+
+        <seperator pady="5"/>
+
         <p font.size="24" varname="Output">Output</p>
     </vertical>
 

@@ -351,9 +351,11 @@ TKMLElement("dropdown",OptionMenu,variableOption=True,variableIsPositional=True,
 TKMLElement("spinbox",Spinbox)
 TKMLElement("canvas",Canvas,hasFont=False)
 
+TKMLElement("listbox",Listbox, textIsInserted=True,textIsList=True)
+
 TKMLElement("text",scrolledtext.Text,textIsInserted=True,textIsVariableDefault=True,variableOption=True,)
 TKMLElement("scrolledtext",scrolledtext.ScrolledText,textIsInserted=True,textIsVariableDefault=True,variableOption=True,)
-
+TKMLElement("seperator",ttk.Separator,hasFont=False)
 
 VerticleLayoutElement("vertical")
 HorizontalLayoutElement("horizontal")
@@ -503,31 +505,6 @@ class Window(object):
         if hasRef:
             self.elements[ref] = output
         return output
-
-
-        if element.tag == 'seperator':
-            output = ttk.Separator(root, **element.attrib)
-
-
-        elif element.tag == "canvas":
-            output = Canvas(root, **element.attrib)
-
-
-        elif element.tag == "listbox":
-            options = element.text.split(';')
-            # if user wants scrollbar link scrollbar object to list events
-
-            box = Listbox(root, **element.attrib)
-            for option in options:
-                box.insert(END, option)
-            output = box
-
-        elif element.tag == 'autogrid':
-            # autogrid simply needs childs attached to it to work
-            output = AutoGrid(root, **element.attrib)
-            for child in element:
-                output.AddChildToGrid(self.GenerateElement(child, output))
-            output.UpdateItemGrid(50)
 
 
 
