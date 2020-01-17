@@ -4,44 +4,63 @@
         <menu>
             <command>Yeet</command>
         </menu>
-        <style ref="title" fontsize="20" font="times" fg="grey"></style>
+        <!-- Normal fonts avaliable on windows:
+Arial (corresponds to Helvetica), Courier New (Courier), Comic Sans MS, Fixedsys, MS Sans Serif, MS Serif, Symbol, System, Times New Roman (Times), and Verdana:
+
+The available styles are normal, bold, roman, italic, underline, and overstrike.
+
+Windows Colours:
+
+SystemActiveBorder, SystemActiveCaption, SystemAppWorkspace, SystemBackground, SystemButtonFace, SystemButtonHighlight, SystemButtonShadow, SystemButtonText,
+SystemCaptionText, SystemDisabledText, SystemHighlight, SystemHighlightText, SystemInactiveBorder, SystemInactiveCaption,
+SystemInactiveCaptionText, SystemMenu, SystemMenuText, SystemScrollbar, SystemWindow, SystemWindowFrame, SystemWindowText.
+         -->
+
+
+        <!--Inline font -->
+        <style ref="title" font.size="16" font.family="Arial" font.bold="false" font.italic="True" font.underline="True" font.overstrike="False" fg="SystemHighlight"/>
+        <!--Outline font
+        <font name="smallSans" size="12" family="Comic Sans MS" bold="False" italic="True" underline="False" overstick="False"/>
+-->
     </head>
     <body>
         <notebook>
             <vertical defaultcolumnweight="0" defaultrowweight="0">
-                <p>This is page 1</p>
-                <p>This new line is sponsered by verticle layout TM</p>
-                <horizontal>
-                    <p>Horizontal?</p>
-                    <button>Yes</button>
-                </horizontal>
-                <checkbutton>Button</checkbutton>
-                <checkbutton>Button</checkbutton>
-                <button>Button</button>
-                <p sticky="ES" weight="1">Stick to the ground</p>
-            </vertical>
+            <p>This is page 1</p>
+            <p>This new line is sponsered by verticle layout TM</p>
+            <horizontal>
+                <p>Horizontal?</p>
+                <button>Yes</button>
+            </horizontal>
+            <checkbutton>Button</checkbutton>
+            <checkbutton>Button</checkbutton>
+            <button>Button</button>
+            <p sticky="ES" weight="1">Stick to the ground</p>
+        </vertical>
 
-            <text>This is page 2, featuring the grand 'text box', a wonderous moment for mankind</text>
-            <text scrolled="True">This is page 3, and features scrolled text</text>
-            <vertical>
-                <p style="title">This is page 4 with a cool styled title</p>
-                <p>This is page 4 with a boring label</p>
-            </vertical>
-            <p tabname="fone" image="image0.gif"></p>
-            <p tabname="devlin" image="image1.gif">s</p>
-            <vertical>
-                <field type="FLOAT" callback="onfloatchange" varname="floatvalue"></field>
-                <p varname="floatvalue"></p>
-            </vertical>
+        <text style="title">This is page 2, featuring the grand 'text box', a wonderous moment for mankind</text>
+        <scrolledtext>This is page 3, and features scrolled text</scrolledtext>
+        <vertical>
+            <p style="title">This is page 4 with a cool styled title</p>
+            <p>This is page 4 with a boring label</p>
+        </vertical>
 
-            <vertical>
-                <field type="INT" callback="onintchange" varname="intvalue"></field>
-                <p varname="intvalue"></p>
-            </vertical>
+        <p tabname="fone" image="image1.gif"/>
+        <p tabname="devlin" image="image0.gif">s</p>
 
-            <p style="title">This is page 9, with the same style as 4</p>
-            <p>This is page 10</p>
+        <vertical tabname="Float Value">
+            <floatfield font.size="32" vartrace="OnFloatChange" varname="floatvalue">2.5</floatfield>
+            <p varname="floatvalue"/>
+        </vertical>
 
-        </notebook>
-    </body>
-</tkml>
+        <vertical tabname="Int Value">
+            <intfield vartrace="OnIntChange" varname="intvalue">1</intfield>
+            <p varname="intvalue"/>
+        </vertical>
+
+        <p style="title">This is page 9, with the same style as 4</p>
+        <p>This is page 10</p>
+
+    </notebook>
+</body>
+        </tkml>

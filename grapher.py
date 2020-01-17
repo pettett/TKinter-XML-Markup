@@ -9,6 +9,7 @@ import tkviewport
 from tkinter import *
 import random
 
+
 lastMousePos = None
 viewport = (800, 600)
 hx = viewport[0]/2
@@ -40,248 +41,268 @@ markup = '''
     </body>
     '''.format(*viewport)
 
-with tkml.Window(markup, generate=False) as window:
+window = tkml.Window(markup,generate=False)
 
-    @window.custom
-    class GraphFrame(tkviewport.OpenGLFrame):
-        def __init__(self, window, root, **kw):
-            kw["frameTime"] = int(kw.pop("frameTime", 0))
-            super().__init__(root, **kw)
+@window.custom
+class GraphFrame(tkviewport.OpenGLFrame):
+    def __init__(self, window, root, **kw):
+        kw["frameTime"] = int(kw.pop("frameTime",0))
+        super().__init__(root, **kw)
 
-        def startgl(self):
-            refresh2d(self.width, self.height)
+    def startgl(self):
+        refresh2d(self.width, self.height)
 
-        def initgl(self):
-            refresh2d(self.width, self.height)
+    def initgl(self):
+        refresh2d(self.width, self.height)
 
-        def redraw(self):
-            DrawGraph(self.width, self.height)
+    def redraw(self):
+        DrawGraph(self.width, self.height)
 
-    window.GenerateWindow()
+window.GenerateWindow()
 
-    def refresh2d(width, height):
-        glViewport(0, 0, width, height)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0.0, width, 0.0, height, 0.0, 1.0)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glClearColor(1, 1, 1, 1)
+def refresh2d(width, height):
+    glViewport(0, 0, width, height)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    glOrtho(0.0, width, 0.0, height, 0.0, 1.0)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    glClearColor(1, 1, 1, 1)
 
-    def DrawGrid(width, xgap, ygap):
-        # setup opengl to accept and array of vertexes
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glColor(0.1, 0.1, 0.1)
-        # draw many lines while opengl is setup for it
-        for x in range(xOffset % xgap, viewport[0], xgap):
-            # define the vertexes of the line
-            lineVertices = [x, 0, 0.0, x, viewport[1], 0.0]
 
-            glLineWidth(width)
-            # tell openGL how to read the vertexes - groups of 3, floats, 0 gap, using array defined above
-            glVertexPointer(3, GL_FLOAT, 0, lineVertices)
-            # Draw the line
-            glDrawArrays(GL_LINES, 0, 2)
+def DrawGrid(width, xgap, ygap):
+    # setup opengl to accept and array of vertexes
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glColor(0.1, 0.1, 0.1)
+    # draw many lines while opengl is setup for it
+    for x in range(xOffset % xgap, viewport[0], xgap):
+        # define the vertexes of the line
+        lineVertices = [x, 0, 0.0, x, viewport[1], 0.0]
 
-        for y in range(-yOffset % ygap, viewport[1], ygap):
-            # define the vertexes of the line
-            lineVertices = [0, y, 0.0, viewport[0], y, 0.0]
-
-            glLineWidth(width)
-            # tell openGL how to read the vertexes - groups of 3, floats, 0 gap, using array defined above
-            glVertexPointer(3, GL_FLOAT, 0, lineVertices)
-            # Draw the line
-            glDrawArrays(GL_LINES, 0, 2)
-
-        # disable previous instructions
-        glDisableClientState(GL_VERTEX_ARRAY)
-
-    def DrawLines():
-
-        # setup opengl to accept and array of vertexes
-        glEnableClientState(GL_VERTEX_ARRAY)
-
-        lineVertices = [200.0, 100.0, 0.0, 100.0, 300.0, 0.0]
-
+        glLineWidth(width)
         # tell openGL how to read the vertexes - groups of 3, floats, 0 gap, using array defined above
         glVertexPointer(3, GL_FLOAT, 0, lineVertices)
         # Draw the line
         glDrawArrays(GL_LINES, 0, 2)
-        # draw the next line while still within client state to make better performance (i think)
-        lineVertices = [300.0, 200.0, 0.0, 200.0, 400.0, 0.0]
+
+    for y in range(-yOffset % ygap, viewport[1], ygap):
+        # define the vertexes of the line
+        lineVertices = [0, y, 0.0, viewport[0], y, 0.0]
+
+        glLineWidth(width)
         # tell openGL how to read the vertexes - groups of 3, floats, 0 gap, using array defined above
         glVertexPointer(3, GL_FLOAT, 0, lineVertices)
         # Draw the line
         glDrawArrays(GL_LINES, 0, 2)
-        # disable previous instructions
-        glDisableClientState(GL_VERTEX_ARRAY)
 
-    def DrawEquationLineStrip(equation, color):
-        lineVertices = []
-        sampleSize = 5
-        # create a list of vertices for the graph
-        for x in range(xOffset % sampleSize, viewport[0]+sampleSize, sampleSize):
+    # disable previous instructions
+    glDisableClientState(GL_VERTEX_ARRAY)
 
-            try:
-                y = equation((x-xOffset)/xPixelsPerUnit)*yPixelsPerUnit-yOffset
-                lineVertices.append(x)
-                lineVertices.append(y)
-                lineVertices.append(0)
-            except ValueError:
-                # do not add the value to the array
-                pass
 
-        glColor(color[0], color[1], color[2], 1)
-        glLineWidth(2.5)
-        glVertexPointer(3, GL_FLOAT, 0, lineVertices)
-        # Draw the line
-        glDrawArrays(GL_LINE_STRIP, 0, len(lineVertices)//3)
+def DrawLines():
 
-    def DrawEquations():
+    # setup opengl to accept and array of vertexes
+    glEnableClientState(GL_VERTEX_ARRAY)
 
-        # setup drawing for the multiple equation lines
-        glEnableClientState(GL_VERTEX_ARRAY)
+    lineVertices = [200.0, 100.0, 0.0, 100.0, 300.0, 0.0]
 
-        for i, equation in enumerate(equations):
-            DrawEquationLineStrip(equation, lineColors[i])
+    # tell openGL how to read the vertexes - groups of 3, floats, 0 gap, using array defined above
+    glVertexPointer(3, GL_FLOAT, 0, lineVertices)
+    # Draw the line
+    glDrawArrays(GL_LINES, 0, 2)
+    # draw the next line while still within client state to make better performance (i think)
+    lineVertices = [300.0, 200.0, 0.0, 200.0, 400.0, 0.0]
+    # tell openGL how to read the vertexes - groups of 3, floats, 0 gap, using array defined above
+    glVertexPointer(3, GL_FLOAT, 0, lineVertices)
+    # Draw the line
+    glDrawArrays(GL_LINES, 0, 2)
+    # disable previous instructions
+    glDisableClientState(GL_VERTEX_ARRAY)
 
-        # disable previous instructions
-        glDisableClientState(GL_VERTEX_ARRAY)
 
-    def DrawGraph(w, h):
-        global viewport
-        viewport = (w, h)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+def DrawEquationLineStrip(equation, color):
+    lineVertices = []
+    sampleSize = 5
+    # create a list of vertices for the graph
+    for x in range(xOffset % sampleSize, viewport[0]+sampleSize, sampleSize):
 
-        # render equations
+        try:
+            y = equation((x-xOffset)/xPixelsPerUnit)*yPixelsPerUnit-yOffset
+            lineVertices.append(x)
+            lineVertices.append(y)
+            lineVertices.append(0)
+        except ValueError:
+            # do not add the value to the array
+            pass
 
-        unitsInScreen = w/xPixelsPerUnit
-        # pick unit scale based on units on screen
+    glColor(color[0],color[1],color[2], 1)
+    glLineWidth(2.5)
+    glVertexPointer(3, GL_FLOAT, 0, lineVertices)
+    # Draw the line
+    glDrawArrays(GL_LINE_STRIP, 0, len(lineVertices)//3)
 
-        scalar = 0.05
 
-        # calculate scale from closest power of 10
+def DrawEquations():
 
-        xUnitScale = 2 ** math.ceil(math.log2(unitsInScreen*scalar))
+    # setup drawing for the multiple equation lines
+    glEnableClientState(GL_VERTEX_ARRAY)
 
-        yUnitScale = 2 ** math.ceil(math.log2(unitsInScreen*scalar))
+    for i, equation in enumerate(equations):
+        DrawEquationLineStrip(equation, lineColors[i])
 
-        # one grid line should reprosent unit scale number of units
+    # disable previous instructions
+    glDisableClientState(GL_VERTEX_ARRAY)
 
-        DrawGrid(1.5, int(xPixelsPerUnit*xUnitScale)*2,
-                 int(yPixelsPerUnit*yUnitScale)*2)
 
-        DrawGrid(1, int(xPixelsPerUnit*xUnitScale),
-                 int(yPixelsPerUnit*yUnitScale))
+def DrawGraph(w, h):
+    global viewport
+    viewport = (w, h)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        DrawEquations()
+    # render equations
 
-    @window.callback
-    def GenerateGraph():
-        global equations
-        equations = []
-        for i in range(lineCount):
-            equationString = window.values['input{0}'.format(i)].get()
-            equations.append(eval('lambda x:'+equationString, math.__dict__))
+    unitsInScreen = w/xPixelsPerUnit
+    # pick unit scale based on units on screen
 
-    @window.callback
-    def AddLine(startValue=''):
-        global lineCount
-        markup = equationField.format(lineCount)
-        if lineCount != 0:
-            window.AppendElements(
-                '<body><seperator pady="3"/></body>', window.elements['equationholder'])
+    scalar = 0.05
 
-        window.AppendElements(markup, window.elements['equationholder'])
-        x = lineCount  # save the current index into its own variable so it stays constant after new lines are made
+    # calculate scale from closest power of 10
 
-        window.values['input{0}'.format(lineCount)].set(startValue)
+    xUnitScale = 2 ** math.ceil(math.log2(unitsInScreen*scalar))
 
-        if lineCount > len(lineColors)-1:
-            lineColors.append(
-                (random.random(), random.random(), random.random()))
+    yUnitScale = 2 ** math.ceil(math.log2(unitsInScreen*scalar))
 
-        window.elements['colorpick{0}'.format(
-            lineCount)].NormalizedColor = lineColors[lineCount]
+    # one grid line should reprosent unit scale number of units
 
-        window.elements['colorpick{0}'.format(
-            lineCount)].OnChangeEvent = lambda: ChangeLineColor(x)
+    DrawGrid(1.5, int(xPixelsPerUnit*xUnitScale)*2,
+             int(yPixelsPerUnit*yUnitScale)*2)
 
-        window.callbacks['remove{0}'.format(lineCount)] = lambda: RemoveLine(x)
+    DrawGrid(1, int(xPixelsPerUnit*xUnitScale),
+             int(yPixelsPerUnit*yUnitScale))
 
-        lineCount += 1
+    DrawEquations()
 
-    def RemoveLine(index):
-        pass
-
-    def ChangeLineColor(index):
-        global lineColors
-        color = window.elements['colorpick{0}'.format(
-            index)].NormalizedColor
-        print(color)
-        lineColors[index] = color
-
-    def OnMouseDrag(event):
-        global lastMousePos, xOffset, yOffset
-        if lastMousePos == None:
-            lastMousePos = (event.x, event.y)
-        relX = event.x - lastMousePos[0]
-        relY = event.y - lastMousePos[1]
-        xOffset += relX
-        yOffset += relY
-
-        lastMousePos = (event.x, event.y)
-
-    def OnMouseUp(event):
-        global lastMousePos
-        lastMousePos = None
-
-    def MouseWheel(event):
-        ZoomX(event.delta)
-        ZoomY(event.delta)
-
-    def ShiftMouseWheel(event):
-        ZoomX(event.delta)
-
-    def CtrlMouseWheel(event):
-        ZoomY(event.delta)
-
-    def ZoomX(delta):
-        global xPixelsPerUnit
-        change = delta/120/10
-        xPixelsPerUnit += xPixelsPerUnit * change
-
-    def ZoomY(delta):
-        global yPixelsPerUnit
-        change = delta/120/10
-        yPixelsPerUnit += yPixelsPerUnit*change
-
-    lineCount = 0
-
+@window.callback
+def GenerateGraph():
+    global equations
     equations = []
+    for i in range(lineCount):
+        equationString = window.values['input{0}'.format(i)].get()
+        equations.append(eval('lambda x:'+equationString, math.__dict__))
 
-    equationField = """<horizontal>
-                <colorfield ref="colorpick{0}" weight="0"/>
-                <p weight="0">Enter Equation:</p>
-                <field padx="5" varname="input{0}"/>
-                <button weight="0" callback="remove{0}">x</button>
-                </horizontal>"""
+@window.callback
+def AddLine(startValue=''):
+    global lineCount
+    markup = equationField.format(lineCount)
+    if lineCount != 0:
+        window.AppendElements(
+            '<body><seperator pady="3"/></body>', window.elements['equationholder'])
 
-    lineColors = [
-        (1, .40, .40),
-        (.40, 1, .40),
-        (.40, .40, 1),
-        (1, 1, .40),
-        (1, .40, 1),
-        (.40, 1, 1)
-    ]
+    window.AppendElements(markup, window.elements['equationholder'])
+    x = lineCount  # save the current index into its own variable so it stays constant after new lines are made
 
-    graphFrame = window.elements['graphframe']
+    window.values['input{0}'.format(lineCount)].set(startValue)
 
-    graphFrame.bind('<B1-Motion>', OnMouseDrag)
-    graphFrame.bind('<MouseWheel>', MouseWheel)
-    graphFrame.bind('<Shift-MouseWheel>', ShiftMouseWheel)
-    graphFrame.bind('<Control-MouseWheel>', CtrlMouseWheel)
-    graphFrame.bind('<ButtonRelease-1>', OnMouseUp)
-    AddLine('x**2')
-    GenerateGraph()
+    if lineCount > len(lineColors)-1:
+        lineColors.append((random.random(), random.random(), random.random()))
+
+    window.elements['colorpick{0}'.format(
+        lineCount)].NormalizedColor = lineColors[lineCount]
+
+    window.elements['colorpick{0}'.format(
+        lineCount)].OnChangeEvent = lambda: ChangeLineColor(x)
+
+    window.callbacks['remove{0}'.format(lineCount)] = lambda: RemoveLine(x)
+
+    lineCount += 1
+
+
+def RemoveLine(index):
+    pass
+
+
+def ChangeLineColor(index):
+    global lineColors
+    color = window.elements['colorpick{0}'.format(
+        index)].NormalizedColor
+    print(color)
+    lineColors[index] = color
+
+
+def OnMouseDrag(event):
+    global lastMousePos, xOffset, yOffset
+    if lastMousePos == None:
+        lastMousePos = (event.x, event.y)
+    relX = event.x - lastMousePos[0]
+    relY = event.y - lastMousePos[1]
+    xOffset += relX
+    yOffset += relY
+
+    lastMousePos = (event.x, event.y)
+
+
+def OnMouseUp(event):
+    global lastMousePos
+    lastMousePos = None
+
+
+def MouseWheel(event):
+    ZoomX(event.delta)
+    ZoomY(event.delta)
+
+
+def ShiftMouseWheel(event):
+    ZoomX(event.delta)
+
+
+def CtrlMouseWheel(event):
+    ZoomY(event.delta)
+
+
+def ZoomX(delta):
+    global xPixelsPerUnit
+    change = delta/120/10
+    xPixelsPerUnit += xPixelsPerUnit * change
+
+
+def ZoomY(delta):
+    global yPixelsPerUnit
+    change = delta/120/10
+    yPixelsPerUnit += yPixelsPerUnit*change
+
+
+
+
+lineCount = 0
+
+equations = []
+
+equationField = """<horizontal>
+            <colorfield ref="colorpick{0}" weight="0"/>
+            <p weight="0">Enter Equation:</p>
+            <field padx="5" varname="input{0}"/>
+            <button weight="0" callback="remove{0}">x</button>
+            </horizontal>"""
+
+
+lineColors = [
+    (1, .40, .40),
+    (.40, 1, .40),
+    (.40, .40, 1),
+    (1, 1, .40),
+    (1, .40, 1),
+    (.40, 1, 1)
+]
+
+
+graphFrame = window.elements['graphframe']
+
+graphFrame.bind('<B1-Motion>', OnMouseDrag)
+graphFrame.bind('<MouseWheel>', MouseWheel)
+graphFrame.bind('<Shift-MouseWheel>', ShiftMouseWheel)
+graphFrame.bind('<Control-MouseWheel>', CtrlMouseWheel)
+graphFrame.bind('<ButtonRelease-1>', OnMouseUp)
+AddLine('x**2')
+GenerateGraph()
+
+window.mainloop()
