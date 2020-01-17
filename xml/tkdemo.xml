@@ -4,13 +4,13 @@
         <menu>
             <cascade label="File">
                 <command>Open</command>
-                <command command="onSave">Save</command>
+                <command command="OnSave" keybind="*Control-s*">Save</command>
                 <separator/>
                 <!--Queen Menu is here - this is a comment-->
                 <cascade label="Queen">
                     <command>Mummma</command>
                     <separator/>
-                    <command command="onSave">*Guitar solo*</command>
+                    <command command="OnSolo">*Guitar solo*</command>
                     <cascade label="*Brum-brum*">
                         <command>i just killed a maaan</command>
                         <cascade label="*dum-dum*">

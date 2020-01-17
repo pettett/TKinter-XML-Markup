@@ -18,7 +18,7 @@
 
         <checkbutton varname="asendingPowers" default="true">Asending Powers</checkbutton>
 
-        <button callback="OnButtonPressed">Calculate!</button>
+        <button callback="OnButtonPressed" keybind="*Return*">Calculate!</button>
         <p font.size="24" varname="Output">Output</p>
     </vertical>
 

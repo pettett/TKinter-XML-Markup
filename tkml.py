@@ -150,10 +150,6 @@ class TKMLElement(ElementBase):
                     default = text
                 else:
                     default = element.attrib.pop("default","")
-
-
-
-
                 t=self.variableType
                 if self.variableTypeInput:
                     t = consts[element.attrib.pop("type","STRING")]
@@ -192,8 +188,11 @@ class TKMLElement(ElementBase):
 
 
         if self.callbacks:
-            cname = element.attrib.pop("callback","")
-            if cname != "":
+            cname = element.attrib.pop("callback",None)
+            if cname != None:
+                keybind = element.attrib.pop("keybind",None)
+                if keybind != None:
+                    root.bind_all(FormatKeybind(keybind),lambda event:window.OnCallback(cname))
                 args["command"] = lambda: window.OnCallback(cname)
 
         for widgetAtName,elementAtName in self.inputKeywords.items():
@@ -332,6 +331,11 @@ class NotebookLayoutElement(ElementBase):
             childWidget.grid(sticky='NSEW')
             widget.add(tabFrame, text=tabName)
         return widget
+
+def FormatKeybind(keybind:str)->str:
+    if keybind[0]:
+        keybind = "<"+keybind[1:len(keybind)-1]+">"
+    return keybind
 
 TKMLElement("field",Entry,variableOption=True,textIsVariableDefault=True,textIsInserted=True)
 TKMLElement("intfield",IntField,variableOption=True,textIsVariableDefault=True,textIsInserted=True,variableType=INT,variableName="intvariable")
@@ -570,8 +574,10 @@ class Window(object):
             elif item.tag == "command":
                 function = item.attrib.pop('command', '')
                 if function != '':
-                    item.attrib['command'] = lambda f=function: self.OnCallback(
-                        f)
+                    keybind = item.attrib.pop("keybind",None)
+                    if keybind != None:
+                        root.bind_all(FormatKeybind(keybind),lambda event,f=function:self.OnCallback(f))
+                    item.attrib['command'] = lambda f=function: self.OnCallback(f)
 
                 menubarWidget.add(item.tag, label=item.text, **item.attrib)
             else:

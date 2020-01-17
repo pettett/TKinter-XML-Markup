@@ -3,6 +3,7 @@ from pygame.locals import *
 import tkinter as tk
 import os
 import platform
+import tkml
 
 
 def init():
@@ -61,6 +62,8 @@ class PygameFrame(tk.Frame):
     def Flip(self):
         pygame.display.update()
 
+
+tkml.TKMLElement("pygameframe", PygameFrame, hasFont=False)
 
 if __name__ == "__main__":
     import math
