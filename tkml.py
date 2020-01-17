@@ -55,6 +55,8 @@ import xml.etree.ElementTree as ET
 FLOAT = "FLOAT"
 INT = "INT"
 STRING = "STRING"
+TEXT = "elementtext"
+BOOL = "BOOL"
 
 consts = {
     "HORIZONTAL": HORIZONTAL,
@@ -77,14 +79,19 @@ def remove_prefix(text, prefix):
 
 tkelements = {}
 
-TEXT = "elementtext"
+
 
 def CreateVariable(name,window,t=STRING,default=""):
-    if hasattr(window,name):
-        return getattr(window,name)
+    if name in window.values:
+        return window.values[name]
 
     if t == STRING:
         out = StringVar()
+    elif t == BOOL:
+        out = BooleanVar()
+        default = default.lower() == "true"
+        out.set(default)
+
     elif t == FLOAT:
         out = DoubleVar()
         default=float(default)
@@ -95,10 +102,16 @@ def CreateVariable(name,window,t=STRING,default=""):
         else:
             default = 0
     out.set(default)
-    setattr(window,name,out)
+    window.values[name]=out
     return out
 
-class TKMLElement:
+class ElementBase:
+    def __init__(self,name:str):
+        tkelements[name] = self
+    def GenerateElement(self,root,element,window):
+        pass
+
+class TKMLElement(ElementBase):
     def __init__(self,name:str,tkobject:object,variableOption=False,hasFont=True,callbacks=False,variableType=STRING,textIsList=False,variableIsPositional=False,
                 variableTypeInput=False,textIsVariableDefault=False,textIsInserted=False,acceptImages=False,variableName="textvariable",**inputKeywords):
         self.name = name
@@ -115,7 +128,7 @@ class TKMLElement:
         self.textIsList = textIsList
         self.hasFont = hasFont
         self.variableIsPositional = variableIsPositional
-        tkelements[name] = self
+        super().__init__(name)
 
     def GenerateElement(self,root,element,window):
         args={}
@@ -135,6 +148,8 @@ class TKMLElement:
                 default = ""
                 if self.textIsVariableDefault:
                     default = text
+                else:
+                    default = element.attrib.pop("default","")
 
 
 
@@ -206,10 +221,121 @@ class TKMLElement:
         return widget
 
 
+class VerticleLayoutElement(ElementBase):
+    def GenerateElement(self,root,element,window):
+        scrolled = element.attrib.pop("scrolled", False)
+        frameWidget = Frame(root)
+        frameWidget.columnconfigure(0, weight=1)
+        for index, child in enumerate(element):
+            self.AddChildToVerticalLayout(window,child, index, frameWidget)
+        return frameWidget
+
+    def AddChildToVerticalLayout(self,window, child, index, parent):
+        parent.rowconfigure(index, **GetConfigureAttributes(child,"vertical."))
+        grida = GetGridAttributes(child,"vertical.")
+        grida["row"] = index
+        grida["column"] = 0
+        childWidget = window.GenerateElement(child, parent)
+
+        childWidget.grid(**grida)
+
+class HorizontalLayoutElement(ElementBase):
+    def GenerateElement(self,root,element,window):
+        if root == None:
+            root = self.root  # same as vertical but set coumn not row
+        frameWidget = Frame(root)
+        frameWidget.rowconfigure(0, weight=1)
+        for index, child in enumerate(element):
+
+            frameWidget.columnconfigure(index, **GetConfigureAttributes(child,"horizontal."))
+            grida = GetGridAttributes(child,"horizontal.")
+            grida["row"] = 0
+            grida["column"] = index
+
+            childWidget = window.GenerateElement(child, root=frameWidget)
+
+            childWidget.grid(**grida)
+        return frameWidget
+
+class GridLayoutElement(ElementBase):
+    def GenerateElement(self,root,grid,window):
+        label = grid.attrib.pop('label', '')
+        defaultColumnWeight = grid.attrib.pop('defaultcolumnweight', 0)
+        defaultRowWeight = grid.attrib.pop('defaultrowweight', 0)
+
+        if label == '':
+            gridFrame = Frame(root, **grid.attrib)
+        else:
+            grid.attrib['text'] = label
+            gridFrame = LabelFrame(root, **grid.attrib)
+
+        columns = 1
+        configuredColumns = []
+        rows = 1
+        configuredRows = []
+
+        p = "grid."
+
+        #configure columns then configure rows
+        for rowConfig in GetAttribs(grid,"rowconfig"):
+            row = int(rowConfig.attrib.pop('row', 0))
+            configuredRows.append(row)
+
+            gridFrame.rowconfigure(row, **rowConfig.attrib)
+
+        for columnConfig in GetAttribs(grid,"columnconfig"):
+            column = int(columnConfig.attrib.pop("column", 0))
+            configuredColumns.append(column)
+            at = columnConfig.attrib
+            for child in columnConfig:
+                #remove prefix and add text as tag of it's name
+                name = remove_prefix(child.tag,"columnconfig.")
+                at[name] = child.text
+            gridFrame.columnconfigure(column, **at)
+
+        for element in grid:
+            if element.tag.startswith(p):
+                continue
+
+            gridAttributes = GetGridAttributes(element,p)
+
+            if gridAttributes["column"] > columns:
+                columns = gridAttributes["column"]  # If this row or column is the biggest
+            if gridAttributes["row"] > rows:  # update the value so all unconfiged
+                rows = gridAttributes["row"]  # zones can be defaulted
+
+            generated = window.GenerateElement(element, gridFrame)
+
+            generated.grid(**gridAttributes)
+
+        for row in range(rows+1):  # set defaults
+            if row not in configuredRows:
+                gridFrame.rowconfigure(row, weight=defaultRowWeight)
+        for column in range(columns+1):
+            if column not in configuredColumns:
+                gridFrame.columnconfigure(column, weight=defaultColumnWeight)
+        gridFrame.grid(sticky=W+E+N+S)
+        return gridFrame
+
+class NotebookLayoutElement(ElementBase):
+    def GenerateElement(self,root,element,window):
+
+        # Make each child of notebook object their own page
+        # return the notebook object so it can be used elsewhere
+        widget = ttk.Notebook(root)
+        for index, child in enumerate(element):
+            tabName = child.attrib.pop("tabname", "Tab {0}".format(index+1))
+            tabFrame = Frame(widget)
+            tabFrame.rowconfigure(0, weight=1)
+            tabFrame.columnconfigure(0, weight=1)
+            childWidget = window.GenerateElement(child, root=tabFrame)
+            childWidget.grid(sticky='NSEW')
+            widget.add(tabFrame, text=tabName)
+        return widget
 
 TKMLElement("field",Entry,variableOption=True,textIsVariableDefault=True,textIsInserted=True)
 TKMLElement("intfield",IntField,variableOption=True,textIsVariableDefault=True,textIsInserted=True,variableType=INT,variableName="intvariable")
-TKMLElement("checkbutton",Checkbutton,variableOption=True,variableType=INT,text=TEXT,variableName="variable")
+TKMLElement("checkbutton",Checkbutton,variableOption=True,variableType=BOOL,text=TEXT,variableName="variable")
 TKMLElement("floatfield",FloatField,variableOption=True,textIsVariableDefault=True,textIsInserted=True,variableType=FLOAT,variableName="floatvariable")
 
 TKMLElement("p",Label,text=TEXT,variableOption=True,textIsVariableDefault=True,acceptImages=True)
@@ -224,13 +350,130 @@ TKMLElement("canvas",Canvas,hasFont=False)
 TKMLElement("text",scrolledtext.Text,textIsInserted=True,textIsVariableDefault=True,variableOption=True,)
 TKMLElement("scrolledtext",scrolledtext.ScrolledText,textIsInserted=True,textIsVariableDefault=True,variableOption=True,)
 
+
+VerticleLayoutElement("vertical")
+HorizontalLayoutElement("horizontal")
+GridLayoutElement("grid")
+NotebookLayoutElement("notebook")
+
 #TKMLElement("",)
 
 #event wrappers
 
+def GetElementsStartingWith(root,start):
+    for child in root:
+        if child.tag.startswith(start):
+            yield child
+
+def GetAttrib(root,att,outType,base,prefix=""):
+    value = root.attrib.pop(att, base)
+    if value == base:
+        if prefix =="":
+            prefix = "{}.".format(root.tag)
+        for child in GetElementsStartingWith(root,prefix):
+            #go through to see if there are any specific elements for list
+            t = remove_prefix(child.tag,prefix)
+            if t == att:
+                value = child.text
+                break
+    return outType(value)
+
+def GetAttribs(root,att,prefix=""):
+    if prefix =="":
+        prefix = "{}.".format(root.tag)
+    for child in GetElementsStartingWith(root,prefix):
+        #go through to see if there are any specific elements for list
+        t = remove_prefix(child.tag,prefix)
+        if t == att:
+            #need to add all nested attributes
+            yield child
+
+
+def GetGridAttributes(element,p):
+    return {
+        "row": GetAttrib(element,"gridy",int,0,p),
+        "column" : GetAttrib(element,"gridx",int,0,p),
+        "pady" : GetAttrib(element,"pady",int,0,p),
+        "ipadx" : GetAttrib(element,"ipadx",int,0,p),
+        "ipady" : GetAttrib(element,"ipady",int,0,p),
+        "padx" : GetAttrib(element,"padx",int,0,p),
+        "sticky" : element.attrib.pop('sticky', 'wen'),
+        "rowspan" : GetAttrib(element,"gridspanx",int,1,p),
+        "columnspan" : GetAttrib(element,"gridspany",int,1,p)
+        }
+
+def GetConfigureAttributes(element,p):
+    return {
+        "weight": GetAttrib(element,"weight",int,0,p),
+        "minsize" : GetAttrib(element,"minsize",int,0,p),
+        "pad" : GetAttrib(element,"pad",int,0,p)
+        }
+
+
 #used to decorate functions to call events
 
 class Window(object):
+    def __init__(self, tkml: str = None,filename:str = None, **kw: dict) -> object:
+        """Create A TKML Window"""
+        # compile tkml to elements
+        self.values = {}
+
+
+        self.pages = kw.pop("pages",{})
+
+        if tkml == None and filename == None:
+            raise Exception("No tkml or filename")
+        elif filename != None:
+            self.pages['root'] = ET.parse(filename).getroot()
+        else:
+            self.pages['root'] = ET.fromstring(tkml) 
+
+        self.customs = {}
+        # Element('tkml', tkml).children[0]
+
+        
+        self.callbacks = {}
+        self.elements = {}
+        self.styles = {}
+
+        root = kw.pop("root",None)
+        if root == None:
+            self.root = Tk()
+        else:
+            self.root = root
+
+
+        if (kw.pop("generate",True)):
+            self.GenerateWindow()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self,*args):
+        self.mainloop()
+
+
+    def __getattr__(self,name:str):
+
+        if name == "values":
+            return self.__getattribute__("values")
+        elif name in self.values:
+            return self.values[name].get()
+        else:
+            return self.__getattribute__(name)
+
+    def __setattr__(self,name:str,value):
+
+        if name == "values":
+            return super().__setattr__("values",value)
+        elif name in self.values:
+            return self.values[name].set(value)
+        else:
+            return super().__setattr__(name,value)
+
+
+
+
     def callback(self,func):
         self.callbacks[func.__name__] = func
         return func
@@ -251,76 +494,20 @@ class Window(object):
                 if tag not in element.attrib:
                     element.attrib[tag] = styleTags[tag]
 
-        print(element.tag)
-
-        if element.tag == 'grid':
-            output = self.GenerateChildrenInGrid(element)
-        elif element.tag == "horizontal":
-            output = self.GenerateHorizontalLayout(element, root=root)
-        elif element.tag == "vertical":
-            output = self.GenerateVerticalLayout(element, root=root)
-        elif element.tag == "notebook":
-            output = self.GenerateNotebook(element, root=root)
-        else:
-            output = tkelements[element.tag].GenerateElement(root,element,self)
+        output = tkelements[element.tag].GenerateElement(root,element,self)
 
         if hasRef:
             self.elements[ref] = output
         return output
 
 
-
-
-
-
-
-        callback = element.attrib.pop('callback', '')
-        hasCallback = callback != ''
-
-        callbackArgs = element.attrib.pop('arg', [])
-        if callbackArgs != []:  # temporary conversion to list because args not passed as list
-            callbackArgs = [callbackArgs]
-
-        varname = element.attrib.pop("varname", "")
-        hasVariable = varname != ''
-        image = element.attrib.pop("image", '')
-
-        if image != '':
-            image = PhotoImage(file=image)
-
-
-
-        output = None
-
-
-        if element.tag == "progressbar":
-            # controller must have access to value and like of bar
-            # functions start,stop and step up to 100%
-            bar = ttk.Progressbar()
-            output = bar
-
-        elif element.tag == "text":
-            scrolled = element.attrib.pop('scrolled', False)
-            if scrolled:
-                text = scrolledtext.ScrolledText(root)
-            else:
-                text = Text(root)
-            text.insert(END, element.text)
-            output = text
-
-        elif element.tag == 'seperator':
+        if element.tag == 'seperator':
             output = ttk.Separator(root, **element.attrib)
 
-
-        elif element.tag == "pygameframe":
-            element.attrib['flags'] = element.text.split(';')
-            output = pygame_frame.PygameFrame(root, **element.attrib)
 
         elif element.tag == "canvas":
             output = Canvas(root, **element.attrib)
 
-        elif element.tag == "gradient":  # inherits from canvas with function to draw gradients onto
-            output = colorpick.Gradient(root, **element.attrib)
 
         elif element.tag == "listbox":
             options = element.text.split(';')
@@ -369,111 +556,8 @@ class Window(object):
             raise Exception('Style has no reference')
         self.styles[ref] = style.attrib
 
-    def GetElementsStartingWith(self,root,start):
-        for child in root:
-            if child.tag.startswith(start):
-                yield child
 
-    def GetAttrib(self,root,att,outType,base,prefix=""):
-        value = root.attrib.pop(att, base)
-        if value == base:
-            if prefix =="":
-                prefix = "{}.".format(root.tag)
-            for child in self.GetElementsStartingWith(root,prefix):
-                #go through to see if there are any specific elements for list
-                t = remove_prefix(child.tag,prefix)
-                if t == att:
-                    value = child.text
-                    break
-        return outType(value)
 
-    def GetAttribs(self,root,att,prefix=""):
-        if prefix =="":
-            prefix = "{}.".format(root.tag)
-        for child in self.GetElementsStartingWith(root,prefix):
-            #go through to see if there are any specific elements for list
-            t = remove_prefix(child.tag,prefix)
-            if t == att:
-                #need to add all nested attributes
-                yield child
-    def GetGridAttributes(self,element,p):
-        return {
-            "row": self.GetAttrib(element,"gridy",int,0,p),
-            "column" : self.GetAttrib(element,"gridx",int,0,p),
-            "pady" : self.GetAttrib(element,"pady",int,0,p),
-            "ipadx" : self.GetAttrib(element,"ipadx",int,0,p),
-            "ipady" : self.GetAttrib(element,"ipady",int,0,p),
-            "padx" : self.GetAttrib(element,"padx",int,0,p),
-            "sticky" : element.attrib.pop('sticky', 'wen'),
-            "rowspan" : self.GetAttrib(element,"gridspanx",int,1,p),
-            "columnspan" : self.GetAttrib(element,"gridspany",int,1,p)
-            }
-
-    def GetConfigureAttributes(self,element,p):
-        return {
-            "weight": self.GetAttrib(element,"weight",int,0,p),
-            "minsize" : self.GetAttrib(element,"minsize",int,0,p),
-            "pad" : self.GetAttrib(element,"pad",int,0,p)
-            }
-
-    def GenerateChildrenInGrid(self, grid):
-        label = grid.attrib.pop('label', '')
-        defaultColumnWeight = grid.attrib.pop('defaultcolumnweight', 0)
-        defaultRowWeight = grid.attrib.pop('defaultrowweight', 0)
-
-        if label == '':
-            gridFrame = Frame(self.root, **grid.attrib)
-        else:
-            grid.attrib['text'] = label
-            gridFrame = LabelFrame(self.root, **grid.attrib)
-
-        columns = 1
-        configuredColumns = []
-        rows = 1
-        configuredRows = []
-
-        p = "grid."
-
-        #configure columns then configure rows
-        for rowConfig in self.GetAttribs(grid,"rowconfig"):
-            row = int(rowConfig.attrib.pop('row', 0))
-            configuredRows.append(row)
-
-            gridFrame.rowconfigure(row, **rowConfig.attrib)
-
-        for columnConfig in self.GetAttribs(grid,"columnconfig"):
-            column = int(columnConfig.attrib.pop("column", 0))
-            configuredColumns.append(column)
-            at = columnConfig.attrib
-            for child in columnConfig:
-                #remove prefix and add text as tag of it's name
-                name = remove_prefix(child.tag,"columnconfig.")
-                at[name] = child.text
-            gridFrame.columnconfigure(column, **at)
-
-        for element in grid:
-            if element.tag.startswith(p):
-                continue
-
-            gridAttributes = self.GetGridAttributes(element,p)
-
-            if gridAttributes["column"] > columns:
-                columns = gridAttributes["column"]  # If this row or column is the biggest
-            if gridAttributes["row"] > rows:  # update the value so all unconfiged
-                rows = gridAttributes["row"]  # zones can be defaulted
-
-            generated = self.GenerateElement(element, gridFrame)
-            print(gridAttributes)
-            generated.grid(**gridAttributes)
-
-        for row in range(rows+1):  # set defaults
-            if row not in configuredRows:
-                gridFrame.rowconfigure(row, weight=defaultRowWeight)
-        for column in range(columns+1):
-            if column not in configuredColumns:
-                gridFrame.columnconfigure(column, weight=defaultColumnWeight)
-        gridFrame.grid(sticky=W+E+N+S)
-        return gridFrame
 
     def GenerateMenuBar(self, menubar, root):  # menubar - element
         menubarWidget = Menu(root, tearoff=0)
@@ -503,98 +587,17 @@ class Window(object):
             root.add_cascade(
                 label=menubar.attrib['label'], menu=menubarWidget, underline=0)
 
-    def GenerateNotebook(self, notebook, root):
-        # Make each child of notebook object their own page
-        # return the notebook object so it can be used elsewhere
-        widget = ttk.Notebook(root)
-        for index, child in enumerate(notebook):
-            tabName = child.attrib.pop("tabname", "Tab {0}".format(index+1))
-            tabFrame = Frame(widget)
-            tabFrame.rowconfigure(0, weight=1)
-            tabFrame.columnconfigure(0, weight=1)
-            element = self.GenerateElement(child, root=tabFrame)
-            element.grid(sticky='NSEW')
-            widget.add(tabFrame, text=tabName)
-        return widget
 
-    def GenerateVerticalLayout(self, vertical, root):
-        scrolled = vertical.attrib.pop("scrolled", False)
-        frameWidget = Frame(root)
-        frameWidget.columnconfigure(0, weight=1)
-        for index, child in enumerate(vertical):
-            self.AddChildToVerticalLayout(child, index, frameWidget)
-        return frameWidget
 
-    def AddChildToVerticalLayout(self, child, index, parent):
-        parent.rowconfigure(index, **self.GetConfigureAttributes(child,"vertical."))
-        grida = self.GetGridAttributes(child,"vertical.")
-        grida["row"] = index
-        grida["column"] = 0
-        childWidget = self.GenerateElement(child, parent)
 
-        childWidget.grid(**grida)
 
-    def GenerateHorizontalLayout(self, horizontal, root=None):
-        if root == None:
-            root = self.root  # same as vertical but set coumn not row
-        frameWidget = Frame(root)
-        frameWidget.rowconfigure(0, weight=1)
-        for index, child in enumerate(horizontal):
-
-            frameWidget.columnconfigure(index, **self.GetConfigureAttributes(child,"horizontal."))
-            grida = self.GetGridAttributes(child,"horizontal.")
-            grida["row"] = 0
-            grida["column"] = index
-
-            childWidget = self.GenerateElement(child, root=frameWidget)
-
-            childWidget.grid(**grida)
-        return frameWidget
 
     def OnCallback(self, tag, *args):
         if tag in self.callbacks:
             self.callbacks[tag](*args)
 
-    def __init__(self, tkml: str = None,filename:str = None, **kw: dict) -> object:
-        """Create A TKML Window"""
-        # compile tkml to elements
-
-        self.pages = kw.pop("pages",{})
-
-        if tkml == None and filename == None:
-            raise Exception("No tkml or filename")
-        elif filename != None:
-            self.pages['root'] = ET.parse(filename).getroot()
-        else:
-            self.pages['root'] = ET.fromstring(tkml) 
-
-        
-        
-
-        self.customs = {}
-        # Element('tkml', tkml).children[0]
-
-        self.values = {}
-        self.callbacks = {}
-        self.elements = {}
-        self.styles = {}
-
-        root = kw.pop("root",None)
-        if root == None:
-            self.root = Tk()
-        else:
-            self.root = root
 
 
-        if (kw.pop("generate",True)):
-            self.GenerateWindow()
-
-    def __enter__(self):
-        print("entered")
-        return self
-
-    def __exit__(self,*args):
-        self.mainloop()
 
     def GenerateWindow(self):
         self.root.rowconfigure(0, weight=1)

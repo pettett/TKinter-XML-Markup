@@ -1,25 +1,25 @@
 <body>
-<vertical>
+    <vertical>
 
-<horizontal>
-<floatfield weight="1" varname="coeffeciant1">1</floatfield>
-<p weight="1">x to the power of</p>
-<floatfield weight="1" varname="exponent1">1</floatfield>
-</horizontal>
+        <horizontal>
+            <floatfield weight="1" varname="coeffeciant1">1</floatfield>
+            <p weight="1">x to the power of</p>
+            <floatfield weight="1" varname="exponent1">1</floatfield>
+        </horizontal>
 
-<horizontal>
-<floatfield weight="1" varname="coeffeciant2">2</floatfield>
-<p weight="1">x to the power of</p>
-<floatfield weight="1" varname="exponent2">0</floatfield>
-</horizontal>
+        <horizontal>
+            <floatfield weight="1" varname="coeffeciant2">2</floatfield>
+            <p weight="1">x to the power of</p>
+            <floatfield weight="1" varname="exponent2">0</floatfield>
+        </horizontal>
 
-<p>all to the power of</p>
-<intfield varname="power">4</intfield>
+        <p>all to the power of</p>
+        <intfield varname="power">4</intfield>
 
-<checkbutton varname="asendingPowers">Asending Powers</checkbutton>
+        <checkbutton varname="asendingPowers" default="true">Asending Powers</checkbutton>
 
-<button callback="OnButtonPressed">Calculate!</button>
-<p font.size="24" varname="Output">Output</p>
-</vertical>
+        <button callback="OnButtonPressed">Calculate!</button>
+        <p font.size="24" varname="Output">Output</p>
+    </vertical>
 
 </body>

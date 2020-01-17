@@ -9,7 +9,7 @@
             <button callback="ButtonOnePressed" gridx="1" gridy="0">Press Me!</button>
 
             <p gridx="0" gridy="1">String Field</p>
-            <field varname="InputValue" callback="InputValueChanged" gridx="1" gridy="1"/>
+            <field varname="InputValue" vartrace="InputValueChanged" gridx="1" gridy="1">Default Text</field>
             <p gridx="2" gridy="1" varname="InputValue">Value</p>
 
             <p gridy="2">Radio Buttons</p>

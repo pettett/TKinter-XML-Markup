@@ -35,13 +35,13 @@ with Window(filename="xml/bionomialExpansion.xml") as w:
     def OnButtonPressed():
         # binomial expansion
 
-        c1 = w.coeffeciant1.get()
-        c2 = w.coeffeciant2.get()
-        e1 = w.exponent1.get()
-        e2 = w.exponent2.get()
-        p = w.power.get()
+        c1 = w.coeffeciant1
+        c2 = w.coeffeciant2
+        e1 = w.exponent1
+        e2 = w.exponent2
+        p = w.power
 
-        asending = bool(w.asendingPowers.get())
+        asending = w.asendingPowers
 
         values = []
         out = ""
@@ -64,4 +64,4 @@ with Window(filename="xml/bionomialExpansion.xml") as w:
             if i != len(values)-1:
                 out += " + "
 
-        w.Output.set(out)
+        w.Output = out
