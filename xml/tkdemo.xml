@@ -69,11 +69,11 @@
             <slider gridy="2" gridx="1" min="0" max="100" orient="horizontal"></slider>
 
 
-            <radiobutton gridy="3" value="1">Radio Option 1</radiobutton>
-            <radiobutton gridy="3" value="0" gridx="1">Radio Option 2</radiobutton>
+            <radiobutton gridy="3" varname="radioGroup1" value="1">Radio Option 1</radiobutton>
+            <radiobutton gridy="3" varname="radioGroup1" value="0" gridx="1">Radio Option 2</radiobutton>
 
 
-            <!-- <dropdown gridy="4">Option 1;Option 2;Option 3</dropdown> -->
+            <dropdown varname="optionBox" gridy="4">Option 1;Option 2;Option 3</dropdown>
             <spinbox gridy="4" gridx="1">1;2;4;8;16</spinbox>
 
 

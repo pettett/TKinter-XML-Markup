@@ -87,6 +87,9 @@ def CreateVariable(name,window,t=STRING,default=""):
 
     if t == STRING:
         out = StringVar()
+        if type(default) == list:
+            #make the first item in the list the default setting
+            default = default[0]
     elif t == BOOL:
         out = BooleanVar()
         default = default.lower() == "true"
@@ -206,7 +209,8 @@ class TKMLElement(ElementBase):
 
         try:
             if self.variableIsPositional:
-                widget = self.tkobject(root,variable,*text,**args)
+                widget = self.tkobject(root,variable,*text)
+                widget.config(**args)
             else:
                 widget = self.tkobject(root,**args)
         except Exception:
@@ -337,6 +341,8 @@ def FormatKeybind(keybind:str)->str:
         keybind = "<"+keybind[1:len(keybind)-1]+">"
     return keybind
 
+
+
 TKMLElement("field",Entry,variableOption=True,textIsVariableDefault=True,textIsInserted=True)
 TKMLElement("intfield",IntField,variableOption=True,textIsVariableDefault=True,textIsInserted=True,variableType=INT,variableName="intvariable")
 TKMLElement("checkbutton",Checkbutton,variableOption=True,variableType=BOOL,text=TEXT,variableName="variable")
@@ -346,8 +352,8 @@ TKMLElement("p",Label,text=TEXT,variableOption=True,textIsVariableDefault=True,a
 TKMLElement("button",Button,text=TEXT,callbacks=True)
 
 TKMLElement("slider",Scale,to="max",from_="min")
-TKMLElement("radiobutton",Radiobutton,text=TEXT)
-TKMLElement("dropdown",OptionMenu,variableOption=True,variableIsPositional=True,textIsList=True)
+TKMLElement("radiobutton",Radiobutton,text=TEXT,variableName="variable",variableOption=True,variableType=INT)
+TKMLElement("dropdown",OptionMenu,variableOption=True,variableIsPositional=True,textIsList=True,textIsVariableDefault=True)
 TKMLElement("spinbox",Spinbox)
 TKMLElement("canvas",Canvas,hasFont=False)
 
