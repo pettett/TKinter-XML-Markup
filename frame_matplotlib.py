@@ -37,40 +37,46 @@ if __name__ == "__main__":
 
     layout = """
     <tkml>
-        <vertical>
-            <p>This graph is embedded inside tkinter!</p>
+        <horizontal>
             <matgraph ref="sinGraph" width="400" height="400" sticky="news" weight="1"/>
-        </vertical>
+            <vertical>
+                <p>Number of points</p>
+                <intfield varname="pointCount">20</intfield>
+                <button callback="RandomizePoints" keybind="*Return*">Randomize!</button>
+                <p>Random Mode:</p>
+                <dropdown varname="randomMode">Random;Binomial</dropdown>
+            </vertical>
+        </horizontal>
     </tkml>
     """
 
-    window = tkml.Window(layout)
+    with tkml.Window(layout) as window:
+        @window.callback
+        def RandomizePoints():
+            if window.randomMode == "Random":
+                # generate a load of random points
+                x = np.random.uniform(
+                    low=0, high=10, size=window.pointCount)
+                y = np.random.uniform(
+                    low=0, high=10, size=window.pointCount)
+            elif window.randomMode == "Binomial":
+                n = 2000
+                bi = np.random.binomial(n=n, p=0.2, size=window.pointCount)
+                x = np.arange(300, 500, 1)
+                y = [sum(bi == v)/n for v in x]
 
-    graph = window.elements["sinGraph"]
+            plt.clear()
 
-    t = np.arange(0, 5, .01)
-    graph.fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+            plt.scatter(x, y, color="r")
 
-    window.mainloop()
+            graph.canvas.draw()
 
-"""
-    root = tkinter.Tk()
-    root.wm_title("Embedding in Tk")
+        graph = window.elements["sinGraph"]
 
-    MatplotlibFrame(root, bd=2, relief=tkinter.SUNKEN).pack(
-        expand=1, fill="both")
+        plt = graph.fig.add_subplot(111)
 
-    def _quit():
-        root.quit()     # stops mainloop
-        root.destroy()  # this is necessary on Windows to prevent
-        # Fatal Python Error: PyEval_RestoreThread: NULL tstate
-
-    button = tkinter.Button(master=root, text="Quit", command=_quit)
-    button.pack(side=tkinter.BOTTOM)
-
-    tkinter.mainloop()
-    # If you put root.destroy() here, it will cause an error if the window is
-<<<<<<< HEAD
-    # closed with the window manager.
-=======
-    # closed with the window manager."""
+        x = np.random.uniform(
+            low=0, high=10, size=window.pointCount)
+        y = np.random.uniform(
+            low=0, high=10, size=window.pointCount)
+        sct = plt.scatter(x, y, color="r")
