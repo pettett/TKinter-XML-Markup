@@ -1,4 +1,4 @@
-from tkml import Window
+from tkml.tkml import Window
 import operator as op
 from functools import reduce
 

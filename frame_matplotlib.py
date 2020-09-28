@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 
 import numpy as np
 
-import tkml
+import tkml.tkml
 
 
 class MatplotlibFrame(tkinter.Frame):

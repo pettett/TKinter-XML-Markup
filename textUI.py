@@ -1,4 +1,4 @@
-import tkml
+import tkml.tkml
 # simple test ui featuring every element.
 # when every element is changed a message will be written to console
 

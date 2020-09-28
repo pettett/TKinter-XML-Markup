@@ -1,4 +1,4 @@
-from tkml import *
+from tkml.tkml import *
 from tkinter import messagebox
 
 import random

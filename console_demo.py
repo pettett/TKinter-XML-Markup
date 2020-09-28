@@ -1,5 +1,5 @@
 import sys
-from tkml import *
+from tkml.tkml import *
 import threading
 import time
 import builtins

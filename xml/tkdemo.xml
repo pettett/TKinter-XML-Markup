@@ -50,7 +50,7 @@
         </menu>
     </head>
     <body minWidth="400" minHeight="100">
-        <grid relief="sunken">
+        <grid relief="sunken" border="5">
             <grid.columnconfig column="0" weight="1"></grid.columnconfig>
             <grid.columnconfig column="1">
                 <columnconfig.minsize>100</columnconfig.minsize>
@@ -63,14 +63,14 @@
                 <grid.gridx>1</grid.gridx>
             </field>
 
-            <button callback="OnButtonPress" ref="colorButton" gridy="1">Enter</button>
+            <button callback="OnButtonPress" ref="colorButton" gridy="1" columnspan="3">Enter</button>
 
             <checkbutton gridy="2">Check Button</checkbutton>
-            <slider gridy="2" gridx="1" min="0" max="100" orient="horizontal"></slider>
+            <slider gridy="2" gridx="2" min="0" max="100" orient="horizontal"></slider>
 
 
             <radiobutton gridy="3" varname="radioGroup1" value="1">Radio Option 1</radiobutton>
-            <radiobutton gridy="3" varname="radioGroup1" value="0" gridx="1">Radio Option 2</radiobutton>
+            <radiobutton gridy="3" columnspan="2" varname="radioGroup1" value="0" gridx="1">Radio Option 2</radiobutton>
 
 
             <dropdown varname="optionBox" gridy="4">Option 1;Option 2;Option 3</dropdown>

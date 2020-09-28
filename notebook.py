@@ -1,4 +1,4 @@
-import tkml
+import tkml.tkml
 
 
 with tkml.Window(filename="xml/notebook.xml") as window:

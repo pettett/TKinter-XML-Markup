@@ -12,7 +12,7 @@
 from sys import argv
 import pygame
 from pygame.locals import *
-import tkml
+import tkml.tkml
 from random import shuffle
 import pygame_frame
 

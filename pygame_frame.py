@@ -3,7 +3,7 @@ from pygame.locals import *
 import tkinter as tk
 import os
 import platform
-import tkml
+import tkml.tkml
 
 
 def init():
