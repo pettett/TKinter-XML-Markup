@@ -63,7 +63,7 @@
                 <grid.gridx>1</grid.gridx>
             </field>
 
-            <button callback="OnButtonPress" gridy="1">Enter</button>
+            <button callback="OnButtonPress" ref="colorButton" gridy="1">Enter</button>
 
             <checkbutton gridy="2">Check Button</checkbutton>
             <slider gridy="2" gridx="1" min="0" max="100" orient="horizontal"></slider>

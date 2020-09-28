@@ -1,0 +1,14 @@
+<tkml>
+    <body width="400" height="400">
+        <head>
+            <title>Console Demo</title>
+        </head>
+        <vertical weight="1" sticky="nsew">
+            <listbox weight="1" sticky="nsew" ref="console"></listbox>
+            <horizontal>
+                <field varname="inp">test</field>
+                <button callback="OnInput" keybind="*Return*">Submit</button>
+            </horizontal>
+        </vertical>
+    </body>
+</tkml>

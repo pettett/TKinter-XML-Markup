@@ -141,7 +141,7 @@ class TKMLElement(ElementBase):
         styleName = element.attrib.pop("style",None)
 
 
-        if self.textIsList:
+        if self.textIsList and text != None:
             #turn the inputted text into a list
             text = text.split(";")
 
